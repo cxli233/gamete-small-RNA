@@ -1,0 +1,530 @@
+---
+title: "siRNA_abundance_at_24nt_loci"
+author: "Chenxin Li"
+date: "March 5, 2019"
+output:
+  html_notebook:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(ggplot2)
+library(emmeans)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(readxl)
+library(vegan)
+library(edgeR)
+library(RColorBrewer)
+library(stringr)
+library(svglite)
+```
+
+#load data
+```{r}
+egg_spec <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.egg_specific.sam.txt")
+
+seedling_spec <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.seedling_specific.sam.txt")
+
+sperm_spec <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.sperm_specific.sam.txt")
+
+intersection <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.intersection.sam.txt")
+```
+```{r}
+egg <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.egg_24.sam.txt")
+
+seedling <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.seedling_24.sam.txt")
+
+sperm <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.sperm_24.sam.txt")
+```
+
+```{r}
+colnames(egg_spec) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(seedling_spec) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(sperm_spec) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(intersection) <- c("library", "20", "21", "22", "23", "24", "25")
+
+colnames(egg) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(seedling) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(sperm) <- c("library", "20", "21", "22", "23", "24", "25")
+
+```
+```{r}
+pal3 <- c("tomato1", "seagreen", "dodgerblue2")
+```
+```{r}
+sample_des <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/sample_des.xlsx") 
+siRNA_comp <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/TE/siRNA_comp.xlsx")
+```
+```{r}
+sample_des_size <- siRNA_comp %>% 
+  select(-library) %>% 
+  inner_join(sample_des, by = c("sample_ID")) %>% 
+  select(-X2, -X3, -X4, -X5, -X6)
+sample_des_size
+```
+```{r}
+total_siRNA_length <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/total_lengths_summary.siRNAs.sam.txt") 
+colnames(total_siRNA_length) <- c("library", "20", "21", "22", "23", "24", "25")
+```
+```{r}
+identify_samples <- function(df){
+  df %>% 
+    mutate(sample_ID = case_when(
+    str_detect(library, "sperm.1") ~ "BS1",
+    str_detect(library, "Sperm2") ~ "BS2",
+    str_detect(library, "Sperm4a") ~ "BS4a",
+    str_detect(library, "sperm4b") ~ "BS4b",
+    str_detect(library, "sperm6a") ~ "BS6a",
+    str_detect(library, "sperm6b") ~ "BS6b",
+    str_detect(library, "sperm.5b") ~ "SP5b",
+    str_detect(library, "sperm.5c") ~ "SP5c",
+    str_detect(library, "VegetativeCell1") ~ "BV1",
+    str_detect(library, "VegetativeCell2") ~ "BV2",
+    str_detect(library, "Bulk.15") ~ "B15",
+    str_detect(library, "Bulk.20") ~ "B20",
+    str_detect(library, "Bulk.25") ~ "B25",
+    str_detect(library, "seedling4") ~ "SD4",
+    str_detect(library, "Protoplast.18") ~ "P18",
+    str_detect(library, "Protoplast.20") ~ "P20",
+    str_detect(library, "Protoplast.25") ~ "P25",
+    str_detect(library, "egg.9a") ~ "E9a",
+    str_detect(library, "egg.9b") ~ "E9b",
+    str_detect(library, "egg.9c") ~ "E9c",
+    str_detect(library, "eggcell4") ~ "E4",
+    str_detect(library, "eggcell3") ~ "E3",
+    str_detect(library, "eggcell2") ~ "E2",
+    str_detect(library, "ovary.no.egg.1a") ~ "OV1a",
+    str_detect(library, "ovary.no.egg.1b") ~ "OV1b",
+    str_detect(library, "Ovarynoegg2") ~ "OV2",
+    str_detect(library, "SRR57") ~ "root",
+    str_detect(library, "ab_control") ~ "ddm1_con",
+    str_detect(library, "ddm1ab") ~ "ddm1",
+    str_detect(library, "drm2-T-DNA_control") ~ "drm2_con",  #drm2-T-DNA_control.fastq
+    str_detect(library, "drm2-T-DNA.fas") ~ "drm2"
+  )) %>% 
+    inner_join(sample_des_size %>% 
+                 select(lib.size, total.siRNA, sample_ID, sample_type, genotype), by = "sample_ID")
+}
+```
+```{r}
+total_siRNA_length1 <- identify_samples(total_siRNA_length) 
+head(total_siRNA_length1)
+```
+```{r}
+egg_1 <- identify_samples(egg) %>% 
+  mutate(bin = "egg\nloci") %>% 
+  filter(sample_type == "egg" | 
+           sample_type == "seedling shoot" |
+           sample_type == "sperm")
+
+seedling_1 <- identify_samples(seedling) %>% 
+  mutate(bin = "seedling\nshoot\nloci") %>% 
+  filter(sample_type == "egg" | 
+           sample_type == "seedling shoot" |
+           sample_type == "sperm")
+
+sperm_1 <- identify_samples(sperm) %>% 
+  mutate(bin = "sperm\nloci") %>% 
+  filter(sample_type == "egg" | 
+           sample_type == "seedling shoot" |
+           sample_type == "sperm")
+```
+
+```{r}
+egg_spec1 <- identify_samples(egg_spec) %>% 
+  mutate(bin = "egg-\nspecific\nloci") %>% 
+  filter(sample_type == "egg" | 
+           sample_type == "seedling shoot" |
+           sample_type == "sperm")
+
+seedling_spec1 <- identify_samples(seedling_spec) %>% 
+  mutate(bin = "seedling-\nspecific\nloci") %>% 
+  filter(sample_type == "egg" | 
+           sample_type == "seedling shoot" |
+           sample_type == "sperm")
+
+sperm_spec1 <- identify_samples(sperm_spec) %>% 
+  mutate(bin = "sperm-\nspecific\nloci") %>% 
+  filter(sample_type == "egg" | 
+           sample_type == "seedling shoot" |
+           sample_type == "sperm")
+
+intersection1 <- identify_samples(intersection) %>% 
+  mutate(bin = "intersect.") %>% 
+  filter(sample_type == "egg" | 
+           sample_type == "seedling shoot" |
+           sample_type == "sperm")
+```
+
+
+#calculate proportion of 24nt reads in bins out of total 24nt general siRNA
+```{r}
+loci_table_not_spec <- rbind(egg_1 %>% 
+                               filter(sample_type == "egg"), 
+                             seedling_1 %>% 
+                               filter(sample_type == "seedling shoot"), 
+                             sperm_1 %>% 
+                               filter(sample_type == "sperm")) %>% 
+  inner_join(total_siRNA_length1 %>% 
+               select(-library), by = c("sample_ID", "genotype", "sample_type", "lib.size")) %>% 
+  select(-genotype, -library) %>% 
+  mutate(proportion_in_bin = `24.x` / `24.y`) %>% 
+  select(sample_ID, lib.size, sample_type, bin, proportion_in_bin)
+
+loci_table_not_spec
+
+
+loci_table_not_spec_s <- loci_table_not_spec %>% 
+  group_by(sample_type, bin) %>% 
+  summarise(mean.porportion.in.bin = mean(proportion_in_bin)) %>% 
+  ungroup()
+
+loci_table_not_spec_s
+```
+```{r}
+write_excel_csv(loci_table_not_spec_s, "porprotion 24nt siRNA in 24nt siRNA loci.csv")
+```
+
+egg: 62% of 24nt siRNA are in egg loci 
+seedling shoot: 80% of 24nt siRNA are in seedling loci 
+sperm: 50% of 24nt siRNA in sperm loci 
+
+
+
+#calculate proportion of siRNA in cell-specific bins out of siRNA in bins
+```{r}
+sum_length <- function(df){
+  df %>% 
+    select(-library, -genotype) %>% 
+    gather("length", "counts", 2:6) %>% 
+    group_by(sample_ID, sample_type, bin) %>% 
+    summarise(total.counts = sum(counts)) %>% 
+    ungroup()
+}
+```
+```{r}
+egg_1_s <- sum_length(egg_1) %>% 
+  filter(sample_type == "egg")
+
+seedling_1_s <- sum_length(seedling_1) %>% 
+  filter(sample_type == "seedling shoot")
+
+sperm_1_s <- sum_length(sperm_1) %>% 
+  filter(sample_type == "sperm")
+```
+
+```{r}
+loci_table_not_spec1 <- rbind(egg_1_s,
+                              seedling_1_s,
+                              sperm_1_s) 
+
+loci_table_not_spec1 #total counts in bins
+```
+```{r}
+egg_spec_s <- sum_length(egg_spec1) %>% 
+  filter(sample_type == "egg")
+
+seedling_spec_s <- sum_length(seedling_spec1) %>% 
+  filter(sample_type == "seedling shoot")
+
+sperm_spec_s <- sum_length(sperm_spec1) %>% 
+  filter(sample_type == "sperm")
+
+intersection_s <- sum_length(intersection1) 
+```
+
+```{r}
+loci_table_spec <- rbind(egg_spec_s, 
+                         seedling_spec_s, 
+                         sperm_spec_s, 
+                         intersection_s) %>% 
+  inner_join(loci_table_not_spec1, by = c("sample_ID", "sample_type")) %>% 
+  mutate(proportion_specific = total.counts.x / total.counts.y) 
+
+loci_table_spec
+```
+```{r}
+loci_table_spec_s <- loci_table_spec %>% 
+  group_by(sample_type, bin.x) %>% 
+  summarise(mean.porportion = mean(proportion_specific)) %>% 
+  ungroup()
+
+loci_table_spec_s
+
+write_excel_csv(loci_table_spec_s, "porprotion siRNA in sample-specific loci and intersect.csv")
+```
+egg siRNA in egg specific loci: 15%;
+egg siRNA in intersection: 50% (!);
+seedling shoot siRNA in seedling specific loci: 78%;
+seedling shoot siRNA in intersection: 7%;
+sperm siRNA in sperm specific loci: 50%;
+sperm siRNA in intersection: 26%. 
+
+
+
+
+
+```{r}
+loci_table <- rbind(egg_spec1, seedling_spec1, sperm_spec1, intersection1) %>% 
+  inner_join(total_siRNA_length1 %>% 
+               select(-library), by = c("sample_ID", "genotype", "sample_type", "lib.size", "total.siRNA")) %>% 
+  select(-genotype, -library) 
+
+head(loci_table)
+```
+
+
+#plot normalized to each specific lengths
+```{r}
+loci_1 <- loci_table %>% 
+  mutate("20" = `20.x` / `20.y`) %>% 
+  mutate("21" = `21.x` / `21.y`) %>% 
+  mutate("22" = `22.x` / `22.y`) %>% 
+  mutate("23" = `23.x` / `23.y`) %>% 
+  mutate("24" = `24.x` / `24.y`) %>% 
+  mutate("25" = `25.x` / `25.y`) %>% 
+  select(sample_ID, lib.size, total.siRNA, sample_type, bin, `20`, `21`, `22`, `23`, `24`, `25`) %>%
+  gather("length", "proportion", 6:11) %>% 
+  mutate(norm = "per specific length")
+
+head(loci_1)
+```
+
+#plot normalized to total siRNA
+```{r}
+loci_2 <- loci_table %>% 
+  select(-`20.y`, -`21.y`, -`22.y`, -`23.y`, -`24.y`, -`25.y`) %>% 
+  gather("length", "counts", 1:6) %>% 
+  mutate(proportion = counts / total.siRNA) %>% 
+  mutate(length = substr(length, start = 0, stop = 2)) %>% 
+  select(-counts) %>% 
+  mutate(norm = "per total siRNA")
+  
+  
+loci_2
+```
+
+```{r}
+dim(loci_2)
+dim(loci_1)
+```
+```{r}
+rbind(loci_1, loci_2) %>% 
+    mutate(bin.f = factor(bin, levels = c(
+    "egg-\nspecific\nloci", 
+    "seedling-\nspecific\nloci",
+    "sperm-\nspecific\nloci",
+    "intersect."
+  ))) %>%
+  ggplot(aes(x = length, y = proportion )) +
+  facet_grid( norm ~ bin.f, scales = "free_y", switch = "y") +
+  stat_summary(geom = "line", fun.y = mean, aes(group = sample_type, color = sample_type), size = 1.5, alpha = 0.7) +
+  stat_summary(geom = "errorbar",  fun.data = "mean_cl_boot", aes(color = sample_type), position = position_dodge(0.01)) + 
+  scale_color_manual(values = pal3) +
+  labs(color = NULL,
+       x = NULL,
+       y = "proportion") +
+  theme_minimal() +
+  theme(panel.spacing.y = unit(1, "lines"), strip.placement = "outside") +
+  theme(text = element_text(size= 18, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.position = "bottom")
+
+ggsave("siRNA_in_24nt_loci.svg", width = 7, height = 5.5)
+#ggsave("siRNA_in_24nt_loci.png", width = 7, height = 5.5)
+```
+
+
+#ddm1ab and drm2 siRNA in 24nt siRNA loci (cell specific)
+```{r}
+egg_spec_m <- identify_samples(egg_spec) %>% 
+  mutate(bin = "egg-\nspecific\nloci") %>% 
+  filter(sample_type == "leaf")
+
+seedling_spec_m <- identify_samples(seedling_spec) %>% 
+  mutate(bin = "seedling-\nspecific\nloci") %>% 
+  filter(sample_type == "leaf")
+
+sperm_spec_m <- identify_samples(sperm_spec) %>% 
+  mutate(bin = "sperm-\nspecific\nloci") %>% 
+  filter(sample_type == "leaf")
+
+intersection_m <- identify_samples(intersection) %>% 
+  mutate(bin = "intersect.") %>% 
+  filter(sample_type == "leaf") 
+```
+```{r}
+loci_m <- rbind(egg_spec_m, seedling_spec_m, sperm_spec_m, intersection_m) %>% 
+  inner_join(total_siRNA_length1 %>% 
+               select(-library), by = c("sample_ID", "genotype", "sample_type", "lib.size", "total.siRNA")) %>% 
+  select(-library) 
+
+loci_m
+```
+
+##normalized to specific lengths
+```{r}
+m_lengths <- loci_m %>% 
+  mutate("20" = `20.x` / `20.y`) %>% 
+  mutate("21" = `21.x` / `21.y`) %>% 
+  mutate("22" = `22.x` / `22.y`) %>% 
+  mutate("23" = `23.x` / `23.y`) %>% 
+  mutate("24" = `24.x` / `24.y`) %>% 
+  mutate("25" = `25.x` / `25.y`) %>% 
+  select(sample_ID, genotype, lib.size, total.siRNA, sample_type, bin, `20`, `21`, `22`, `23`, `24`, `25`) %>%
+  gather("length", "proportion", 7:12) %>% 
+  mutate(norm = "per specific length") 
+
+m_lengths
+```
+##normalized to total siRNA
+```{r}
+m_tot <- loci_m %>% 
+  select(-`20.y`, -`21.y`, -`22.y`, -`23.y`, -`24.y`, -`25.y`) %>% 
+  gather("length", "counts", 1:6) %>% 
+  mutate(proportion = counts / total.siRNA) %>% 
+  mutate(length = substr(length, start = 0, stop = 2)) %>% 
+  select(-counts) %>% 
+  mutate(norm = "per total siRNA")
+  
+  
+m_tot
+```
+##plot
+```{r}
+rbind(m_lengths, m_tot) %>% 
+  mutate(sample = case_when(
+    str_detect(sample_ID, "con") == F ~ sample_ID,
+    sample_ID == "ddm1_con" ~ "DDM1 WT ctrl",
+    sample_ID == "drm2_con" ~ "DRM2 WT ctrl"
+  )) %>%
+  mutate(a1 = paste(norm, bin)) %>%
+  mutate(a2 = case_when(
+    str_detect(bin, "egg") &
+      str_detect(norm, "spec") ~ 1,
+    str_detect(bin, "egg") &
+      str_detect(norm, "total") ~ 5,
+    str_detect(bin, "seedling") &
+      str_detect(norm, "spec")~ 2,
+    str_detect(bin, "seedling") &
+      str_detect(norm, "total") ~ 6,
+    str_detect(bin, "sperm") &
+      str_detect(norm, "spec") ~ 3,
+    str_detect(bin, "sperm") &
+      str_detect(norm, "total")~ 7,
+    str_detect(bin, "inter") &
+      str_detect(norm, "spec")~ 4,
+    str_detect(bin, "inter") &
+      str_detect(norm, "tot")~ 8
+  )) %>%
+  mutate(bin.f = factor(bin, levels = c(
+    "egg-\nspecific\nloci", 
+    "seedling-\nspecific\nloci",
+    "sperm-\nspecific\nloci",
+    "intersect."
+  ))) %>%
+  ggplot(aes(x = length, y = proportion )) +
+  #facet_grid(norm ~ bin.f, scales = "free_y", switch = "y") +
+  facet_wrap(~ a2, scales = "free_y", ncol = 4) +
+  stat_summary(geom = "line", fun.y = mean, aes(group = sample, color = sample), size = 1.5, alpha = 0.7) +
+  scale_color_manual(values = c("red","grey40", "blue", "black")) +
+  labs(color = NULL,
+       x = NULL,
+       y = "proportion\n\n") +
+  theme_minimal() +
+  theme(panel.spacing.y = unit(1, "lines"), strip.placement.y = "outside") +
+  theme(strip.text.x = element_blank()) +
+  theme(text = element_text(size= 18, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.position = "bottom")
+
+
+
+ggsave("siRNA_in_24nt_loci_ddm1_drm2.svg", width = 9, height = 5.5)
+```
+#ddm1ab and drm2 siRNA in 24nt siRNA loci (not cell specific - inclusive)
+```{r}
+egg_m <- identify_samples(egg) %>% 
+  mutate(bin = "egg\nloci") %>% 
+  filter(sample_type == "leaf")
+seedling_m <- identify_samples(seedling) %>% 
+  mutate(bin = "seedling\nshoot\nloci") %>% 
+  filter(sample_type == "leaf")
+sperm_m <- identify_samples(sperm) %>% 
+  mutate(bin = "sperm\nloci") %>% 
+  filter(sample_type == "leaf")
+```
+
+```{r}
+loci_m2 <- rbind(egg_m, seedling_m, sperm_m, intersection_m) %>% 
+  inner_join(total_siRNA_length1 %>% 
+               select(-library), by = c("sample_ID", "genotype", "sample_type", "lib.size", "total.siRNA")) %>% 
+  select(-library) 
+loci_m2
+```
+##normalized by specific lengths
+```{r}
+m_lengths2 <- loci_m2 %>% 
+  mutate("20" = `20.x` / `20.y`) %>% 
+  mutate("21" = `21.x` / `21.y`) %>% 
+  mutate("22" = `22.x` / `22.y`) %>% 
+  mutate("23" = `23.x` / `23.y`) %>% 
+  mutate("24" = `24.x` / `24.y`) %>% 
+  mutate("25" = `25.x` / `25.y`) %>% 
+  select(sample_ID, genotype, lib.size, sample_type, bin, `20`, `21`, `22`, `23`, `24`, `25`) %>%
+  gather("length", "proportion", 6:11) %>% 
+  mutate(norm = "per specific length") 
+
+m_lengths2
+```
+```{r}
+m_tot2 <- loci_m2 %>% 
+  select(-`20.y`, -`21.y`, -`22.y`, -`23.y`, -`24.y`, -`25.y`) %>% 
+  gather("length", "counts", 1:6) %>% 
+  mutate(proportion = counts / total.siRNA) %>% 
+  mutate(length = substr(length, start = 0, stop = 2)) %>% 
+  select(sample_ID, genotype, lib.size, sample_type, bin, length, proportion) %>% 
+  mutate(norm = "per total siRNA")
+  
+  
+m_tot2
+```
+```{r}
+rbind(m_lengths2, m_tot2) %>% 
+    mutate(bin.f = factor(bin, levels = c(
+    "egg\nloci", 
+    "seedling\nshoot\nloci",
+    "sperm\nloci",
+    "intersect."
+  ))) %>%
+  ggplot(aes(x = length, y = proportion )) +
+  facet_grid(norm ~ bin.f, scales = "free_y", switch = "y") +
+  stat_summary(geom = "line", fun.y = mean, aes(group = genotype, color = genotype), size = 1.5, alpha = 0.7) +
+  scale_color_manual(values = c("red", "blue", "grey40")) +
+  labs(color = NULL,
+       x = NULL,
+       y = "proportion") +
+  theme_minimal() +
+  theme(panel.spacing.y = unit(1, "lines"), strip.placement = "outside") +
+  theme(text = element_text(size= 18, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.position = "bottom")
+
+
+
+#ggsave("siRNA_in_24nt_loci.svg", width = 7, height = 5.5)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

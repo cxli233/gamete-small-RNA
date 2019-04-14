@@ -1,0 +1,751 @@
+---
+title: "siRNA lengths and TE abundances"
+author: "Chenxin Li"
+date: "February 5, 2019"
+output:
+  html_notebook:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(ggplot2)
+library(emmeans)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(readxl)
+library(vegan)
+library(edgeR)
+library(stringr)
+library(RColorBrewer)
+library(svglite)
+```
+#length profile
+```{r}
+pal <- c("tomato1", "darkgreen", "orangered3", "orange", "grey40", "seagreen", "turquoise4", "violetred2")
+pal6 <- c("tomato1", "darkgreen", "orangered3", "grey40", "seagreen", "dodgerblue2")
+pal3 <- c("tomato1", "seagreen", "dodgerblue2")
+```
+```{r}
+sample_des <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/sample_des.xlsx") 
+
+siRNA_comp <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/TE/siRNA_comp.xlsx")
+
+total_siRNA_length <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/total_lengths_summary.siRNAs.sam.txt") 
+
+unique_siRNA_length <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/unique_lengths_summary.siRNAs.sam.txt") 
+
+cento_siRNA_length <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.CentO.sam.txt") 
+
+tir_siRNA_length <-  read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.TIR.sam.txt") 
+
+gypsy_siRNA_length <- read.delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/siRNA_length_counts/siRNA_length_counts/lengths_summary.Gypsy.sam.txt") 
+```
+
+
+```{r}
+colnames(total_siRNA_length) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(unique_siRNA_length) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(cento_siRNA_length) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(tir_siRNA_length) <- c("library", "20", "21", "22", "23", "24", "25")
+colnames(gypsy_siRNA_length) <- c("library", "20", "21", "22", "23", "24", "25")
+
+```
+
+```{r}
+sample_des_size <- siRNA_comp %>% 
+  select(-library) %>% 
+  inner_join(sample_des, by = c("sample_ID")) %>% 
+  select(-X2, -X3, -X4, -X5, -X6)
+
+sample_des_size
+```
+
+```{r}
+norm_tidy <- function(df){
+  df %>% 
+    mutate(sample_ID = case_when(
+    str_detect(library, "sperm.1") ~ "BS1",
+    str_detect(library, "Sperm2") ~ "BS2",
+    str_detect(library, "Sperm4a") ~ "BS4a",
+    str_detect(library, "sperm4b") ~ "BS4b",
+    str_detect(library, "sperm6a") ~ "BS6a",
+    str_detect(library, "sperm6b") ~ "BS6b",
+    str_detect(library, "sperm.5b") ~ "SP5b",
+    str_detect(library, "sperm.5c") ~ "SP5c",
+    str_detect(library, "VegetativeCell1") ~ "BV1",
+    str_detect(library, "VegetativeCell2") ~ "BV2",
+    str_detect(library, "Bulk.15") ~ "B15",
+    str_detect(library, "Bulk.20") ~ "B20",
+    str_detect(library, "Bulk.25") ~ "B25",
+    str_detect(library, "seedling4") ~ "SD4",
+    str_detect(library, "Protoplast.18") ~ "P18",
+    str_detect(library, "Protoplast.20") ~ "P20",
+    str_detect(library, "Protoplast.25") ~ "P25",
+    str_detect(library, "egg.9a") ~ "E9a",
+    str_detect(library, "egg.9b") ~ "E9b",
+    str_detect(library, "egg.9c") ~ "E9c",
+    str_detect(library, "eggcell4") ~ "E4",
+    str_detect(library, "eggcell3") ~ "E3",
+    str_detect(library, "eggcell2") ~ "E2",
+    str_detect(library, "ovary.no.egg.1a") ~ "OV1a",
+    str_detect(library, "ovary.no.egg.1b") ~ "OV1b",
+    str_detect(library, "Ovarynoegg2") ~ "OV2",
+    str_detect(library, "SRR57") ~ "root",
+    str_detect(library, "ab_control") ~ "ddm1_con",
+    str_detect(library, "ddm1ab") ~ "ddm1",
+    str_detect(library, "drm2-T-DNA_control") ~ "drm2_con",  #drm2-T-DNA_control.fastq
+    str_detect(library, "drm2-T-DNA.fas") ~ "drm2"
+  )) %>% 
+    inner_join(sample_des_size %>% 
+                 select(lib.size, sample_ID, sample_type, genotype), by = "sample_ID") %>% 
+    gather("length", "count", 2:7) %>% 
+    mutate(proportion = count / lib.size) %>% 
+    select(-count) 
+}
+```
+```{r}
+total_siRNA_length1 <- norm_tidy(total_siRNA_length) %>% 
+  mutate(profile = rep("total siRNA")) 
+unique_siRNA_length1 <- norm_tidy(unique_siRNA_length) %>% 
+  mutate(profile = rep("uniquely mapped")) 
+cento_siRNA_length1 <- norm_tidy(cento_siRNA_length)%>% 
+  mutate(profile = rep("CentO")) 
+gypsy_siRNA_length1 <- norm_tidy(gypsy_siRNA_length)%>% 
+  mutate(profile = rep("Gypsy")) 
+tir_siRNA_length1 <- norm_tidy(tir_siRNA_length)%>% 
+  mutate(profile = rep("TIR")) 
+```
+
+```{r}
+siRNA_length <- rbind(
+  total_siRNA_length1,
+  unique_siRNA_length1,
+  cento_siRNA_length1,
+  gypsy_siRNA_length1,
+  tir_siRNA_length1
+)
+
+#siRNA_length
+```
+
+```{r}
+siRNA_length %>% 
+  filter(genotype == "WT") %>% 
+  mutate(profile1 = case_when(
+    profile == "total siRNA" ~ "general siRNA",
+    profile != "total siRNA" ~ profile
+    )) %>% 
+  mutate(profile1 = factor(profile1, levels = c("TIR", "Gypsy", "CentO", "uniquely mapped", "general siRNA"))) %>% 
+  ggplot(aes(x = length, y = proportion )) +
+  facet_wrap( ~ profile1, scales = "free") +
+  stat_summary(geom = "line", fun.y = mean, aes(group = sample_type, color = sample_type), size = 1.5, alpha = 0.7) +
+  stat_summary(geom = "errorbar",  fun.data = "mean_cl_boot", aes(color = sample_type), position = position_dodge(0.01)) + 
+  scale_color_manual(values = pal) +
+  labs(color = NULL,
+       x = NULL,
+       y = "proportion") +
+  ggtitle("WT siRNA profile") +
+  theme_minimal() +
+  theme(text = element_text(size= 14, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.position = "bottom")
+
+ggsave(filename = "WT siRNA profile.png", width = 7.3, height = 5)
+```
+```{r}
+#siRNA_length
+siRNA_length %>% 
+  filter(genotype == "WT") %>% 
+  filter(sample_type == "egg"|
+           sample_type == "sperm" |
+           sample_type == "seedling shoot") %>% 
+  mutate(profile1 = case_when(
+    profile == "total siRNA" ~ "general siRNA",
+    profile != "total siRNA" ~ profile
+    )) %>% 
+  mutate(profile1 = factor(profile1, levels = c("TIR", "Gypsy", "CentO", "uniquely mapped", "general siRNA"))) %>% 
+  ggplot(aes(x = length, y = proportion )) +
+  facet_wrap( ~ profile1, scales = "free_y", ncol = 2) +
+  stat_summary(geom = "line", fun.y = mean, aes(group = sample_type, color = sample_type), size = 1.5, alpha = 0.7) +
+  stat_summary(geom = "errorbar",  fun.data = "mean_cl_boot", aes(color = sample_type), position = position_dodge(0.01)) + 
+  scale_color_manual(values = pal3) +
+  labs(color = NULL,
+       x = NULL,
+       y = "proportion") +
+  theme_minimal() +
+  theme(text = element_text(size= 18, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.position = c(0.8, 0.1))
+
+ggsave(filename = "siRNA profile gamemtes.svg", width = 4.9, height = 6)
+```
+
+```{r}
+siRNA_m <- siRNA_length %>% 
+  filter(sample_type == "leaf") %>% 
+  mutate(rows = case_when(
+    str_detect(sample_ID, "ddm") ~ "ddm1ab leaf",
+    str_detect(sample_ID, "drm") ~ "drm2 leaf"
+  )) %>% 
+   filter(profile == "CentO" |
+           profile == "Gypsy" |
+           profile == "TIR") 
+```
+
+```{r}
+siRNA_m %>% 
+  ggplot(aes(x = length, y = proportion )) +
+  facet_grid(profile ~ rows, scales = "free") +
+  geom_line(aes(group = sample_ID, color = genotype), size = 1.5, alpha = 0.7) +
+  scale_color_manual(values = c("red", "blue", "grey40")) +
+  labs(color = NULL,
+       x = NULL,
+       y = "proportion\n") + 
+  theme_minimal() +
+  theme(text = element_text(size= 18, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.position = "bottom")
+
+ggsave(filename = "mutant_leaf_siRNA_profile.svg", width = 5, height = 5)
+```
+#smRNA composition 
+```{r}
+siRNA_comp_l <- sample_des_size %>% 
+  gather("RNA_type", "count", 2:8) %>% 
+  mutate(pro = count / lib.size) %>% 
+  select(-count, -library) %>% 
+  select(sample_ID, sample_type, genotype, pro, RNA_type) %>% 
+  filter(RNA_type != "total.siRNA") %>% 
+  spread(RNA_type, pro)
+
+siRNA_comp_l
+```
+
+```{r}
+siRNA_TE_pro <- siRNA_length %>% 
+  filter(profile != "total siRNA") %>% 
+  group_by(sample_ID, sample_type, genotype, profile) %>% 
+  summarise(pro = sum(proportion)) %>% 
+  mutate(RNA_type = profile) %>% 
+  select(-profile) %>% 
+  spread("RNA_type", "pro") %>%
+  inner_join(siRNA_comp_l, by = c("sample_ID", "sample_type", "genotype")) %>% 
+  mutate(type = case_when(
+      sample_type == "egg" |
+      sample_type == "ovary" ~ "female",
+    sample_type == "sperm" |
+      sample_type == "pollen VC" ~ "male",
+    sample_type == "seedling shoot" | 
+      sample_type == "sd protoplast"|
+      sample_type == "root" ~ "veg. tissues",
+    sample_type == "leaf" & genotype == "WT" ~ "veg. tissues",
+    sample_type == "leaf" & genotype != "WT" ~ "mutants"
+    
+  )) %>% 
+  mutate(type = factor(type, levels = c("female", "veg. tissues", "male", "mutants"))) %>% 
+  as.data.frame()
+
+
+
+row.names(siRNA_TE_pro) <- paste(siRNA_TE_pro$sample_ID, 
+                                 siRNA_TE_pro$sample_type, 
+                                 siRNA_TE_pro$genotype, 
+                                 siRNA_TE_pro$type,
+                                 sep = ":")
+
+
+siRNA_TE_pro 
+```
+##overview of smRNA composition
+```{r}
+siRNA_comp_L <- sample_des_size %>% 
+  gather("RNA_type", "count", 2:8) %>% 
+  mutate(pro = count / lib.size) %>% 
+  select(-count, -library) %>% 
+  select(sample_ID, sample_type, genotype, pro, RNA_type) %>% 
+  mutate(type = case_when(
+      sample_type == "egg" |
+      sample_type == "ovary" ~ "female",
+    sample_type == "sperm" |
+      sample_type == "pollen VC" ~ "male",
+    sample_type == "seedling shoot" | 
+      sample_type == "sd protoplast"|
+      sample_type == "root" ~ "veg. tissues",
+    sample_type == "leaf" & genotype == "WT" ~ "veg. tissues",
+    sample_type == "leaf" & genotype != "WT" ~ "mutants"
+    
+  )) %>% 
+  mutate(type = factor(type, levels = c("female", "veg. tissues", "male", "mutants"))) %>% 
+  as.data.frame() %>% 
+  #group_by(sample_type, genotype, type, RNA_type) %>% 
+  #summarise(mean.pro = mean(pro)) %>% 
+  mutate(RNA_type1 = case_when(
+    RNA_type == "total.siRNA" ~ "general siRNA",
+    RNA_type != "total.siRNA" ~ RNA_type 
+  ))
+
+
+
+
+
+
+siRNA_comp_L
+```
+```{r}
+logit <- function(p){
+  log(p / (1-p))
+}
+
+invlogit <- function(x){
+  1/(1 + exp(-x))
+}
+```
+
+```{r}
+siRNA_comp_select <- siRNA_comp_L %>% 
+  filter(sample_type == "egg"|
+           sample_type == "sperm"|
+           sample_type == "seedling shoot"|
+           sample_type == "leaf"|
+           sample_type == "root"|
+           sample_type == "ovary") %>% 
+  filter(genotype == "WT") %>% 
+  filter(RNA_type1 != "general siRNA")
+```
+
+```{r}
+write_excel_csv(siRNA_comp_L, "smRNA_composition.csv")
+```
+
+```{r}
+siRNA_comp_L %>% 
+  filter(sample_type == "egg"|
+           sample_type == "sperm"|
+           sample_type == "seedling shoot"|
+           sample_type == "leaf"|
+           sample_type == "root"|
+           sample_type == "ovary") %>% 
+  filter(genotype == "WT") %>% 
+  filter(RNA_type1 != "general siRNA") %>% 
+  mutate(RNA_type2 = factor(RNA_type1, levels = c(
+    "miRNAs", "phasiRNAs (24nt)", "phasiRNAs (21nt)", "tRNAs", "NOR RNAs", "5S rRNAs"
+  ))) %>% 
+  mutate(sample_type.f = factor(sample_type, levels = c(
+    "leaf", "root", "seedling shoot", "ovary", "egg", "sperm"
+  ))) %>% 
+  ggplot(aes(x = sample_type.f, y = pro)) +
+  geom_bar(stat = "summary", aes(fill = sample_type), fun.y = mean, alpha = 0.8) +
+  stat_summary(geom = "errorbar",  fun.data = "mean_cl_boot", aes(), position = position_dodge(0.01), width = 0.3) +
+  facet_wrap( ~ RNA_type2,  scales = "free_y", ncol = 2) +
+  scale_fill_manual(values = pal6) + 
+  scale_x_discrete(labels = c("leaf", "root", "sd. shoot", "ovary", "egg", "sperm")) +
+  labs(x = NULL, 
+       y = "proportion",
+       fill = NULL) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  theme(text = element_text(size= 18, face="bold")) +
+  #theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.x=element_blank()) +
+  theme(axis.text.y=element_text(colour = "black")) 
+
+ggsave("smRNA_comp_overall.svg", width = 4.9, height = 6)
+```
+
+
+##cor between RNA types
+```{r}
+temp <- siRNA_TE_pro %>% 
+   filter(genotype == "WT") %>% 
+  filter(sample_type != "pollen VC")
+
+cor_matrix <- cor(temp[ , 4:13]) 
+#cor_matrix <- cor_matrix[order(cor_matrix[ ,6]), order(cor_matrix[6, ])]
+#cor_matrix[upper.tri(cor_matrix)] <- NA
+
+cor_matrix
+```
+```{r}
+cor_df <- cor_matrix %>% 
+  as.data.frame() %>% 
+  mutate(RNA_type.x = row.names(cor_matrix)) %>% 
+  gather("RNA_type.y", "cor", 1:10)
+
+cor_df
+```
+
+
+
+```{r}
+order_cor <- cor_df %>% 
+  filter(RNA_type.y == "Gypsy") %>% 
+  arrange(cor) %>% 
+  mutate(Order = order(cor)) %>% 
+  select(RNA_type.x, Order) 
+
+order_cor
+```
+```{r}
+order_cor %>% 
+  inner_join(cor_df, by = "RNA_type.x") %>% 
+  inner_join(order_cor, by = c("RNA_type.y" = "RNA_type.x")) %>% 
+  mutate(d = (Order.x + 0.05)^2 + (Order.y + 0.05)^2) %>% 
+  distinct(d, .keep_all = T) %>% 
+  ggplot(aes(x = reorder(RNA_type.x, Order.x), y = reorder(RNA_type.y, Order.y))) +
+  geom_tile(aes(fill = cor)) +
+  geom_text(aes(label = cor %>% round(1)), size = 5, fontface = "bold") +
+  scale_fill_gradientn(colours = rev(brewer.pal(11, "Spectral")), na.value = NA) +
+  labs(x = NULL, 
+       y = NULL) +
+  theme_minimal() +
+  theme(legend.position = c(.8, .4)) +
+  theme(text = element_text(size= 18, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black", angle = 45, hjust = 1)) 
+
+ggsave(filename = "cor_heatmap_siRNA_type.svg", width = 5.5, height = 5)
+```
+
+
+```{r}
+#siRNA_TE_pro
+
+siRNA_TE_pro %>%
+  filter(sample_type != "pollen VC") %>% 
+  filter(sample_type != "sd protoplast") %>% 
+  gather("g1", "p1", 4:5) %>% 
+  gather("g2", "p2", c(4, 7)) %>% 
+  ggplot(aes(x = p2, y = p1)) +
+  facet_grid(g1 ~ g2, scales = "free", switch = "both") +
+   stat_ellipse(aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") + 
+  geom_point(aes(color = sample_type, shape = genotype), size = 3, alpha  = 0.8) +
+  labs(x = NULL,
+       y = NULL,
+       fill = NULL,
+       color = NULL, 
+       shape = NULL) +
+  scale_color_manual(values = pal6) +
+  scale_fill_manual(values = c("tomato1", "green", "steelblue2", "white"), 
+                    guide = F) +
+  scale_shape_manual(values = c(15, 17, 16)) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  guides(color = F) + 
+  theme(text = element_text(size = 18, face="bold")) +
+  theme(axis.text.x=element_text(colour="black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour="black", angle = 45, hjust = 1)) 
+  
+ggsave(filename = "smRNA_composition_plot.svg", width = 5, height = 5)
+```
+
+
+```{r}
+logit <- function(p){log( p/(1 - p))}
+```
+```{r}
+siRNA_TE_pro %>%
+  filter(sample_type != "pollen VC") %>% 
+  filter(sample_type != "sd protoplast") %>% 
+  gather("g1", "p1", 4:5) %>% 
+  gather("g2", "p2", c(4, 7)) %>% 
+  ggplot(aes(x = logit(p2), y = logit(p1))) +
+  facet_grid(g1 ~ g2, scales = "free", switch = "both") +
+   stat_ellipse(aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") + 
+  geom_point(aes(color = sample_type, shape = genotype), size = 3, alpha  = 0.8) +
+  labs(x = NULL,
+       y = NULL,
+       fill = NULL,
+       color = NULL, 
+       shape = NULL) +
+  scale_color_manual(values = pal6) +
+  scale_fill_manual(values = c("tomato1", "green", "steelblue2", "white"), 
+                    guide = F) +
+  scale_shape_manual(values = c(15, 17, 16)) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  guides(color = F) + 
+  theme(text = element_text(size = 18, face="bold")) +
+  theme(axis.text.x=element_text(colour="black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour="black", angle = 45, hjust = 1))
+```
+
+
+
+
+
+
+#Distance matrix
+```{r}
+siRNA_TE_pro
+
+dist_mat <- dist(siRNA_TE_pro[, 4:6], method = "e") %>% as.matrix()
+#dist_mat
+dist_1 <- dist_mat %>% 
+  as.data.frame() %>% 
+  mutate(tag = row.names(dist_mat)) %>% 
+  separate(tag, c("sample_ID", "sample_type", "genotype", "type"), sep = ":") %>% 
+  mutate(class = paste(sample_type, genotype, sep = ":")) %>% 
+  gather("tag2", "distance", 1:31) %>% 
+  separate(tag2, c("sample_ID.y", "sample_type.y", "genotype.y", "type.y"), sep = ":") %>% 
+  mutate(class.y = paste(sample_type.y, genotype.y, sep = ":")) 
+
+
+
+dist_1
+```
+```{r}
+dist_2 <- dist_1 %>% 
+  group_by(class, class.y) %>% 
+  summarise(mean.dist = mean(distance)) %>% 
+  spread(class.y, mean.dist)
+
+dist_3 <- dist_2[, -1] %>% as.data.frame()
+row.names(dist_3) <- dist_2$class
+#dist_3[upper.tri(dist_3)] <- NA
+
+dist_4 <- dist_3 %>% 
+  as.data.frame() %>% 
+  mutate(class.x = row.names(dist_3)) %>% 
+  gather("class.y", "distance", 1:10)  
+
+dist_4
+```
+```{r}
+order_dist <- dist_4 %>% 
+  filter(class.y == "egg:WT") %>% 
+  arrange(distance) %>% 
+  mutate(Order = order(distance)) %>% 
+  select(class.x, Order) 
+
+order_dist
+```
+
+```{r}
+
+order_dist %>% 
+  inner_join(dist_4, by = "class.x") %>% 
+  inner_join(order_dist, by = c("class.y" = "class.x")) %>% 
+  mutate(d = (Order.x + 0.05)^2 + (Order.y + 0.05)^2) %>% 
+  distinct(d, .keep_all = T) %>% 
+  filter(class.x == "sperm:WT"|
+           class.x == "egg:WT" |
+           class.x == "seedling shoot:WT"|
+           class.x == "leaf:WT" |
+           class.x == "leaf:ddm1ab"|
+           class.x == "leaf:drm2"|
+           class.x == "ovary:WT") %>% 
+  filter(class.y == "sperm:WT"|
+           class.y == "egg:WT" |
+           class.y == "seedling shoot:WT"|
+           class.y == "leaf:WT" |
+           class.y == "leaf:ddm1ab"|
+           class.y == "leaf:drm2"|
+           class.y == "ovary:WT") %>% 
+  ggplot(aes(x = reorder(class.x, Order.x), y = reorder(class.y, Order.y))) +
+  geom_tile(aes(fill = distance)) +
+  geom_text(aes(label = distance %>% round(2)), size = 5, fontface = "bold") +
+  scale_fill_gradientn(colours = brewer.pal(9, "Oranges"), na.value = NA) +
+  scale_x_discrete(labels = c("egg", "leaf ddm1ab", "ovary", "pollen VC", "leaf drm2",  "leaf WT",
+                               "sperm", "sd shoot")) +
+  scale_y_discrete(labels = c("egg", "leaf ddm1ab", "ovary", "pollen VC", "leaf drm2",  "leaf WT",
+                              "sperm", "sd shoot")) +
+  labs(x = NULL, 
+       y = NULL) +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  theme(text = element_text(size= 14, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black", angle = 45, hjust = 1)) 
+
+ggsave(filename = "distance_heatmap.svg", width = 5, height = 5)
+```
+##Quantification of Euclidean distances
+```{r}
+siRNA_TE_pro_select <- siRNA_TE_pro %>% 
+  filter(sample_type == "egg"|
+           sample_type == "leaf" |
+           sample_type == "sperm")
+
+row.names(siRNA_TE_pro_select) <- paste(siRNA_TE_pro_select$sample_ID, 
+                                 siRNA_TE_pro_select$sample_type, 
+                                 siRNA_TE_pro_select$genotype, 
+                                 siRNA_TE_pro_select$type,
+                                 sep = ":")
+
+#siRNA_TE_pro_select 
+#dim(siRNA_TE_pro_select)
+
+dist_mat_s <- dist(siRNA_TE_pro_select[, 4:6], method = "e") %>% as.matrix()
+dist_mat_s[upper.tri(dist_mat_s)] <- NA
+#dist_mat_s
+#dim(dist_mat_s) 
+
+dist_s <- dist_mat_s %>% 
+  as.data.frame() %>% 
+  mutate(tag = row.names(dist_mat_s)) %>% 
+  separate(tag, c("sample_ID", "sample_type", "genotype", "type"), sep = ":") %>% 
+  mutate(class = paste(sample_type, genotype, sep = ":")) %>% 
+  gather("tag2", "distance", 1:nrow(siRNA_TE_pro_select)) %>% 
+  separate(tag2, c("sample_ID.y", "sample_type.y", "genotype.y", "type.y"), sep = ":") %>% 
+  mutate(class.y = paste(sample_type.y, genotype.y, sep = ":")) %>% 
+  filter(is.na(distance) == F)
+
+
+dist_s
+```
+
+
+```{r}
+dist_s1 <- dist_s %>% 
+  mutate(comparison = paste(class, class.y, sep = " vs. ")) %>% 
+  mutate(g = case_when(
+    str_detect(comparison, "egg") == T &
+      str_detect(comparison, "sperm") == F ~ "distance to egg",
+    str_detect(comparison, "sperm") == T &
+      str_detect(comparison, "egg") == F  ~ "distance to sperm" 
+  )) %>% 
+  filter(is.na(g) == F) %>% 
+  mutate(text = case_when(
+    paste(sample_type, sample_type.y) == "sperm sperm" ~ "sperm",
+    paste(sample_type, sample_type.y) == "egg egg" ~ "egg",
+    sample_type == "leaf" &
+      genotype == "WT" ~ "WT leaf",
+    sample_type == "leaf" &
+      genotype == "ddm1ab" ~ "ddm1ab leaf",
+    sample_type == "leaf" &
+      genotype == "drm2" ~ "drm2 leaf",
+    sample_type.y == "leaf" &
+      genotype.y == "WT" ~ "WT leaf",
+    sample_type.y == "leaf" &
+      genotype.y == "ddm1ab" ~ "ddm1ab leaf",
+    sample_type.y == "leaf" &
+      genotype.y == "drm2" ~ "drm2 leaf"
+  )) %>% 
+  mutate(text = factor(text, levels = c("WT leaf", "drm2 leaf", "ddm1ab leaf", "egg", "sperm")))
+
+  
+
+dist_s1
+```
+```{r}
+model_s <- lm(distance %>% sqrt() ~ text * g, dist_s1)
+anova(model_s)
+
+plot(model_s)
+```
+```{r}
+est_s <- emmeans(model_s, pairwise ~ text | g)
+
+est_s_bar <- CLD(est_s$emmeans, Letters = letters) %>% 
+  as.data.frame() %>% 
+  filter(is.na(emmean) == F) %>% 
+  mutate(distance = emmean ^ 2) %>% 
+  mutate(lower = lower.CL ^ 2) %>% 
+  mutate(upper = upper.CL ^ 2) %>% 
+  mutate(se = SE ^ 2) %>% 
+  mutate(h = case_when(
+    str_detect(g, "egg") ~ 0.05,
+    str_detect(g, "sperm") ~ 0.1
+  ))
+
+est_s_bar
+```
+
+
+```{r}
+dist_s1 %>% 
+  ggplot(aes(x = text, y = distance)) +
+  #stat_summary(geom = "line", aes(group = g, color = g), fun.y = mean, size = 2, alpha = 0.8) +
+  geom_boxplot(aes(fill = g), alpha = 0.75) +
+  geom_point(color = "grey20", alpha = 0.8, size = 1.5) +
+  facet_grid(.~ g, scales = "free_x", space = "free") + 
+  geom_text(data = est_s_bar, aes(label = .group, y = distance + h) ,fontface = "bold", size = 5) +
+  labs(x = NULL,
+       y = "Euclidean distance") +
+  #scale_color_manual(values = c("tomato1", "violetred2")) +
+  scale_fill_manual(values = c("tomato1", "dodgerblue2")) +
+  theme_minimal() +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.position = "none") +
+  theme(text = element_text(size= 18, face="bold")) 
+
+ggsave(filename = "distance to gametes.svg", height = 3, width = 8)
+```
+
+#ANOVA
+```{r}
+#siRNA_TE_pro
+siRNA_TE_pro_long <- siRNA_TE_pro %>% 
+  gather("RNA_type", "proportion", 4:13) %>% 
+  mutate(class = paste(sample_type, genotype, sep = ":"))
+
+siRNA_TE_pro_long %>% head(10)
+```
+```{r}
+model_pro <- lm(log10(proportion) ~ class * RNA_type, siRNA_TE_pro_long %>% 
+                  filter(RNA_type == "CentO"|
+                          RNA_type == "Gypsy" |
+                          RNA_type == "TIR" |
+                           RNA_type == "miRNAs"))
+anova(model_pro)
+```
+```{r}
+est_TE <- emmeans(model_pro, pairwise ~ class | RNA_type)
+est_TE_bar <- CLD(est_TE$emmeans, Letters = letters) %>% 
+  as.data.frame() %>% 
+  separate(class, remove = F, c("sample_type", "genotype"), sep = ":") %>% 
+  mutate(proportion = 10^emmean) %>% 
+  mutate(upper = 10^upper.CL) %>% 
+  mutate(lower = 10^lower.CL) %>% 
+  mutate(genotype = factor(genotype, levels = c("WT", "ddm1ab", "drm2")))  
+ 
+
+
+est_TE_bar
+
+```
+
+```{r}
+est_TE_bar %>% 
+   mutate(text.y = case_when(
+    RNA_type == "CentO" ~ 0.0023,
+    RNA_type == "Gypsy" ~ 0.125,
+    RNA_type == "TIR" ~ 0.225,
+    RNA_type == "miRNAs" ~ 0.125
+    
+  )) %>%
+  ggplot(aes(x = sample_type, y = proportion)) +
+  facet_grid(RNA_type ~ genotype, scales = "free", space = "free_x", switch = "x") +
+  geom_bar(stat = "identity", aes(fill = sample_type), alpha = 0.8) +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.3) +
+  geom_text(aes(label = .group, y = proportion + text.y), fontface = "bold", size = 5) +
+  scale_fill_manual(values = pal) +
+  scale_x_discrete(labels = NULL) +
+  labs(x = NULL,
+       y = "proportion",
+       fill = "") +
+  theme_minimal() +
+  theme(text = element_text(size= 14, face="bold")) +
+  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.position = "bottom")
+
+
+ggsave(filename = "TE_pro_anova.png", width = 7, height = 7)
+```
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

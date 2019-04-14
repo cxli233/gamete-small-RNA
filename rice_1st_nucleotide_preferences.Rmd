@@ -1,0 +1,129 @@
+---
+title: "First_nucleotide_preferences"
+author: "Chenxin Li"
+date: "January 14, 2019"
+output:
+  html_notebook:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(ggplot2)
+library(emmeans)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(readxl)
+library(vegan)
+library(edgeR)
+library(RColorBrewer)
+library(svglite)
+```
+#1st nucleotide preferences by length
+```{r}
+first_n <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/first_nucleotide_pre/rice_siRNA_1st_nt_by_length.xlsx")
+first_n
+```
+```{r}
+first_n_l <- first_n %>% 
+  gather("nucleotide", "proportion", 3:6) %>% 
+  mutate(nt = as.factor(length)) %>% 
+  mutate(nucleotide = factor(nucleotide, levels = c("A", "C", "G", "U")))
+
+first_n_l %>% 
+  group_by(sample_type, length) %>% 
+  arrange(desc(nucleotide))
+
+#first_n_l[order(first_n_l$nucleotide, decreasing = T), ]
+```
+```{r}
+first_n_l  %>% 
+  ggplot(aes(x = sample_type, y = proportion)) +
+  facet_grid(. ~ nt, scales = "free") +
+  geom_bar(stat = "identity", aes(fill = nucleotide), position = position_stack(reverse = T)) +
+  labs(x = NULL,
+       fill = NULL) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_discrete(label = c("egg", "ovary", "pollen VC", "sd shoot", "sperm")) +
+  theme_minimal()+
+  theme(text = element_text(size = 14, face="bold")) +
+  theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
+  theme(axis.text.y = element_text(colour="black"))
+
+ggsave(filename = "first_nucleotide.png")
+```
+```{r} 
+#egg sperm seedling only
+first_n_l  %>%
+  filter(sample_type == "egg" |
+           sample_type == "seedling" |
+           sample_type == "sperm") %>%
+  ggplot(aes(x = sample_type, y = proportion)) +
+  facet_grid(. ~ nt, scales = "free") +
+  geom_bar(stat = "identity", aes(fill = nucleotide), position = position_stack(reverse = T)) +
+  labs(x = NULL,
+       fill = NULL, 
+       y = NULL) +
+  scale_fill_brewer(palette = "Set2") +
+  theme_minimal()+
+  theme(legend.position = "bottom") +
+  theme(text = element_text(size = 18, face="bold")) +
+  theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
+  theme(axis.text.y = element_text(colour="black"))
+
+ggsave(filename = "first_nucleotide_ECSDSP.svg", width = 3.5, height = 5)
+```
+#by tissue specificity
+```{r}
+first_by_bin <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/first_nucleotide_pre/rice_siRNA_1st_nt_by_bin_type.xlsx")
+```
+```{r}
+first_by_bin
+```
+```{r}
+first_by_bin_l <- first_by_bin %>% 
+  gather("nucleotide", "proportion", 4:7) %>% 
+  mutate(nt = as.factor(length)) %>% 
+  mutate(nucleotide = factor(nucleotide, levels = c("A", "C", "G", "U"))) %>% 
+  group_by(sample_type, length) %>% 
+  arrange(desc(nucleotide))
+```
+```{r}
+first_by_bin_l %>%
+  mutate(loci = case_when(
+    str_detect(bin, "egg") ~ "egg-\nspecific\nloci",
+    str_detect(bin, "seedling") ~ "seedling\nshoot-\nspecific\nloci",
+    str_detect(bin, "sperm") ~ "sperm-\nspecific\nloci",
+    str_detect(bin, "intersect") ~ "intersect."
+    )) %>% 
+  mutate(loci_f = factor(loci, levels = c(
+    "egg-\nspecific\nloci", 
+    "seedling\nshoot-\nspecific\nloci",
+    "sperm-\nspecific\nloci",
+    "intersect."
+  ))) %>%
+  filter(loci_f != "intersect.") %>% 
+  ggplot(aes(x = sample_type, y = proportion)) +
+  #facet_grid(. ~ loci_f, scales = "free", space = "free") +
+  geom_bar(stat = "identity", aes(fill = nucleotide), position = position_stack(reverse = T)) +
+  labs(x = NULL,
+       fill = NULL) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_discrete(labels = c("egg", "seedling", "sperm")) +
+  theme_minimal()+
+  theme(text = element_text(size = 18, face="bold")) +
+  theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
+  theme(axis.text.y = element_text(colour="black"))
+
+ggsave(filename = "first_nucleotide_by_specificity.svg", width = 3, height = 5)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
