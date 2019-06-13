@@ -136,31 +136,7 @@ siRNA_length <- rbind(
 #siRNA_length
 ```
 
-```{r}
-siRNA_length %>% 
-  filter(genotype == "WT") %>% 
-  mutate(profile1 = case_when(
-    profile == "total siRNA" ~ "general siRNA",
-    profile != "total siRNA" ~ profile
-    )) %>% 
-  mutate(profile1 = factor(profile1, levels = c("TIR", "Gypsy", "CentO", "uniquely mapped", "general siRNA"))) %>% 
-  ggplot(aes(x = length, y = proportion )) +
-  facet_wrap( ~ profile1, scales = "free") +
-  stat_summary(geom = "line", fun.y = mean, aes(group = sample_type, color = sample_type), size = 1.5, alpha = 0.7) +
-  stat_summary(geom = "errorbar",  fun.data = "mean_cl_boot", aes(color = sample_type), position = position_dodge(0.01)) + 
-  scale_color_manual(values = pal) +
-  labs(color = NULL,
-       x = NULL,
-       y = "proportion") +
-  ggtitle("WT siRNA profile") +
-  theme_minimal() +
-  theme(text = element_text(size= 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
-  theme(axis.text.y=element_text(colour = "black")) +
-  theme(legend.position = "bottom")
 
-ggsave(filename = "WT siRNA profile.png", width = 7.3, height = 5)
-```
 ```{r}
 #siRNA_length
 siRNA_length %>% 
@@ -173,14 +149,14 @@ siRNA_length %>%
     profile != "total siRNA" ~ profile
     )) %>% 
   mutate(profile1 = factor(profile1, levels = c("TIR", "Gypsy", "CentO", "uniquely mapped", "general siRNA"))) %>% 
-  ggplot(aes(x = length, y = proportion )) +
+  ggplot(aes(x = length, y = proportion*100 )) +
   facet_wrap( ~ profile1, scales = "free_y", ncol = 2) +
   stat_summary(geom = "line", fun.y = mean, aes(group = sample_type, color = sample_type), size = 1.5, alpha = 0.7) +
   stat_summary(geom = "errorbar",  fun.data = "mean_cl_boot", aes(color = sample_type), position = position_dodge(0.01)) + 
   scale_color_manual(values = pal3) +
   labs(color = NULL,
-       x = NULL,
-       y = "proportion") +
+       x = "length/nt",
+       y = "proportion (%)") +
   theme_minimal() +
   theme(text = element_text(size= 18, face="bold")) +
   theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
@@ -188,6 +164,7 @@ siRNA_length %>%
   theme(legend.position = c(0.8, 0.1))
 
 ggsave(filename = "siRNA profile gamemtes.svg", width = 4.9, height = 6)
+ggsave(filename = "siRNA profile gamemtes.png", width = 5, height = 6)
 ```
 
 ```{r}
@@ -344,17 +321,17 @@ siRNA_comp_L %>%
   mutate(sample_type.f = factor(sample_type, levels = c(
     "leaf", "root", "seedling shoot", "ovary", "egg", "sperm"
   ))) %>% 
-  ggplot(aes(x = sample_type.f, y = pro)) +
+  ggplot(aes(x = sample_type.f, y = pro * 100)) +
   geom_bar(stat = "summary", aes(fill = sample_type), fun.y = mean, alpha = 0.8) +
   stat_summary(geom = "errorbar",  fun.data = "mean_cl_boot", aes(), position = position_dodge(0.01), width = 0.3) +
   facet_wrap( ~ RNA_type2,  scales = "free_y", ncol = 2) +
-  scale_fill_manual(values = pal6) + 
-  scale_x_discrete(labels = c("leaf", "root", "sd. shoot", "ovary", "egg", "sperm")) +
+  scale_fill_manual(values = c("darkgreen", "orangered3", "grey40", "tomato1", "seagreen",  "dodgerblue2"),
+                      limits = c("leaf", "ovary", "root", "egg", "seedling shoot", "sperm")) + 
   labs(x = NULL, 
-       y = "proportion",
+       y = "proportion (%)",
        fill = NULL) +
   theme_minimal() +
-  theme(legend.position = "bottom") +
+  theme(legend.position = "bottom", legend.direction = "horizontal") +
   theme(text = element_text(size= 18, face="bold")) +
   #theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
   theme(axis.text.x=element_blank()) +
@@ -388,6 +365,7 @@ cor_df
 
 
 ```{r}
+##make a rainbow
 order_cor <- cor_df %>% 
   filter(RNA_type.y == "Gypsy") %>% 
   arrange(cor) %>% 
@@ -403,7 +381,7 @@ order_cor %>%
   mutate(d = (Order.x + 0.05)^2 + (Order.y + 0.05)^2) %>% 
   distinct(d, .keep_all = T) %>% 
   ggplot(aes(x = reorder(RNA_type.x, Order.x), y = reorder(RNA_type.y, Order.y))) +
-  geom_tile(aes(fill = cor)) +
+  geom_tile(aes(fill = cor), alpha = 0.9) +
   geom_text(aes(label = cor %>% round(1)), size = 5, fontface = "bold") +
   scale_fill_gradientn(colours = rev(brewer.pal(11, "Spectral")), na.value = NA) +
   labs(x = NULL, 
@@ -414,30 +392,89 @@ order_cor %>%
   theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
   theme(axis.text.y=element_text(colour = "black", angle = 45, hjust = 1)) 
 
-ggsave(filename = "cor_heatmap_siRNA_type.svg", width = 5.5, height = 5)
+ggsave(filename = "cor_heatmap_siRNA_type.svg", width = 5.25, height = 5)
+```
+```{r}
+siRNA_TE_pro %>% head()
+```
+```{r}
+siRNA_TE_pro %>%
+  filter(sample_type != "pollen VC") %>% 
+  filter(genotype == "WT") %>%
+  ggplot(aes(y = Gypsy, x = TIR)) +
+  stat_ellipse(aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") + 
+  geom_point(aes(color = sample_type), alpha = 0.8, size = 3) +
+  annotate(geom = "text", label = "cor = -0.6", size = 5, fontface = "bold", x = 0.3, y = 0.3) +
+  labs(x = "TIR siRNA proportion",
+       y = "Gypsy siRNA proportion",
+       fill = NULL,
+       color = NULL, 
+       shape = NULL) +
+  scale_color_manual(values = c("tomato1", "darkgreen", "orangered3", "grey40", "turquoise4", "seagreen", "dodgerblue2")) +
+  scale_fill_manual(values = c("tomato1", "green", "steelblue2", "white"), 
+                    guide = F) +
+  # scale_size_manual(values = c(3, 3, 1.5), guide = F) + 
+  # scale_alpha_manual(values = c(1, 1, 0.8), guide = F) +
+  # scale_shape_manual(values = c(15, 17, 16)) +
+  theme_bw() +
+  theme(legend.position = "right") +
+  # guides(color = F) + 
+  theme(text = element_text(size = 18, face="bold")) +
+  theme(axis.text.x=element_text(colour="black")) +
+  theme(axis.text.y=element_text(colour="black")) 
+
+ggsave("Gypsy_vs_tir.svg", width = 7, height = 5)
+```
+```{r}
+siRNA_TE_pro %>%
+  filter(sample_type != "pollen VC") %>% 
+  filter(genotype == "WT") %>%
+  ggplot(aes(y = Gypsy, x = CentO)) +
+  stat_ellipse(aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") + 
+  geom_point(aes(color = sample_type), alpha = 0.8, size = 3) +
+  annotate(geom = "text", label = "cor = 0.9", size = 5, fontface = "bold", x = 0.002, y = 0.3) +
+  labs(x = "CentO siRNA proportion",
+       y = "Gypsy siRNA proportion",
+       fill = NULL,
+       color = NULL, 
+       shape = NULL) +
+  scale_color_manual(values = c("tomato1", "darkgreen", "orangered3", "grey40", "turquoise4", "seagreen", "dodgerblue2")) +
+  scale_fill_manual(values = c("tomato1", "green", "steelblue2", "white"), 
+                    guide = F) +
+  # scale_size_manual(values = c(3, 3, 1.5), guide = F) + 
+  # scale_alpha_manual(values = c(1, 1, 0.8), guide = F) +
+  # scale_shape_manual(values = c(15, 17, 16)) +
+  theme_bw() +
+  theme(legend.position = "right") +
+  # guides(color = F) + 
+  theme(text = element_text(size = 18, face="bold")) +
+  theme(axis.text.x=element_text(colour="black")) +
+  theme(axis.text.y=element_text(colour="black")) 
+
+ggsave("Gypsy_vs_CentO.svg", width = 7, height = 5)
 ```
 
 
 ```{r}
-#siRNA_TE_pro
-
 siRNA_TE_pro %>%
   filter(sample_type != "pollen VC") %>% 
   filter(sample_type != "sd protoplast") %>% 
   gather("g1", "p1", 4:5) %>% 
   gather("g2", "p2", c(4, 7)) %>% 
-  ggplot(aes(x = p2, y = p1)) +
+  ggplot(aes(x = p2 * 100, y = p1 * 100)) +
   facet_grid(g1 ~ g2, scales = "free", switch = "both") +
-   stat_ellipse(aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") + 
-  geom_point(aes(color = sample_type, shape = genotype), size = 3, alpha  = 0.8) +
-  labs(x = NULL,
-       y = NULL,
+  stat_ellipse(aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") + 
+  geom_point(aes(color = sample_type, shape = genotype, size = genotype, alpha = genotype)) +
+  labs(x = "proportion (%)",
+       y = "proportion (%)",
        fill = NULL,
        color = NULL, 
        shape = NULL) +
   scale_color_manual(values = pal6) +
   scale_fill_manual(values = c("tomato1", "green", "steelblue2", "white"), 
                     guide = F) +
+  scale_size_manual(values = c(3, 3, 1.5), guide = F) + 
+  scale_alpha_manual(values = c(1, 1, 0.8), guide = F) +
   scale_shape_manual(values = c(15, 17, 16)) +
   theme_bw() +
   theme(legend.position = "bottom") +
@@ -447,6 +484,37 @@ siRNA_TE_pro %>%
   theme(axis.text.y=element_text(colour="black", angle = 45, hjust = 1)) 
   
 ggsave(filename = "smRNA_composition_plot.svg", width = 5, height = 5)
+```
+```{r}
+siRNA_TE_pro %>%
+  filter(sample_type != "pollen VC") %>% 
+  filter(sample_type != "sd protoplast") %>%
+  filter(str_detect(sample_ID, "drm") == F) %>% 
+  gather("g1", "p1", 4:5) %>% 
+  gather("g2", "p2", c(4, 7)) %>% 
+  ggplot(aes(x = p2 * 100, y = p1 * 100)) +
+  facet_grid(g1 ~ g2, scales = "free", switch = "both") +
+  stat_ellipse(aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") + 
+  geom_point(aes(color = sample_type, shape = genotype, size = genotype, alpha = genotype)) +
+  labs(x = "proportion (%)",
+       y = "proportion (%)",
+       fill = NULL,
+       color = NULL, 
+       shape = NULL) +
+  scale_color_manual(values = pal6) +
+  scale_fill_manual(values = c("tomato1", "green", "steelblue2", "white"), 
+                    guide = F) +
+  scale_size_manual(values = c(3, 1.5), guide = F) + 
+  scale_alpha_manual(values = c(1, 0.8), guide = F) +
+  scale_shape_manual(values = c(15, 16)) +
+  theme_bw() +
+  theme(legend.position = "bottom") +
+  guides(color = F) + 
+  theme(text = element_text(size = 18, face="bold")) +
+  theme(axis.text.x=element_text(colour="black")) +
+  theme(axis.text.y=element_text(colour="black")) 
+  
+ggsave(filename = "smRNA_composition_plot_new.svg", width = 5, height = 5)
 ```
 
 
@@ -479,273 +547,5 @@ siRNA_TE_pro %>%
   theme(axis.text.x=element_text(colour="black", angle = 45, hjust = 1)) +
   theme(axis.text.y=element_text(colour="black", angle = 45, hjust = 1))
 ```
-
-
-
-
-
-
-#Distance matrix
-```{r}
-siRNA_TE_pro
-
-dist_mat <- dist(siRNA_TE_pro[, 4:6], method = "e") %>% as.matrix()
-#dist_mat
-dist_1 <- dist_mat %>% 
-  as.data.frame() %>% 
-  mutate(tag = row.names(dist_mat)) %>% 
-  separate(tag, c("sample_ID", "sample_type", "genotype", "type"), sep = ":") %>% 
-  mutate(class = paste(sample_type, genotype, sep = ":")) %>% 
-  gather("tag2", "distance", 1:31) %>% 
-  separate(tag2, c("sample_ID.y", "sample_type.y", "genotype.y", "type.y"), sep = ":") %>% 
-  mutate(class.y = paste(sample_type.y, genotype.y, sep = ":")) 
-
-
-
-dist_1
-```
-```{r}
-dist_2 <- dist_1 %>% 
-  group_by(class, class.y) %>% 
-  summarise(mean.dist = mean(distance)) %>% 
-  spread(class.y, mean.dist)
-
-dist_3 <- dist_2[, -1] %>% as.data.frame()
-row.names(dist_3) <- dist_2$class
-#dist_3[upper.tri(dist_3)] <- NA
-
-dist_4 <- dist_3 %>% 
-  as.data.frame() %>% 
-  mutate(class.x = row.names(dist_3)) %>% 
-  gather("class.y", "distance", 1:10)  
-
-dist_4
-```
-```{r}
-order_dist <- dist_4 %>% 
-  filter(class.y == "egg:WT") %>% 
-  arrange(distance) %>% 
-  mutate(Order = order(distance)) %>% 
-  select(class.x, Order) 
-
-order_dist
-```
-
-```{r}
-
-order_dist %>% 
-  inner_join(dist_4, by = "class.x") %>% 
-  inner_join(order_dist, by = c("class.y" = "class.x")) %>% 
-  mutate(d = (Order.x + 0.05)^2 + (Order.y + 0.05)^2) %>% 
-  distinct(d, .keep_all = T) %>% 
-  filter(class.x == "sperm:WT"|
-           class.x == "egg:WT" |
-           class.x == "seedling shoot:WT"|
-           class.x == "leaf:WT" |
-           class.x == "leaf:ddm1ab"|
-           class.x == "leaf:drm2"|
-           class.x == "ovary:WT") %>% 
-  filter(class.y == "sperm:WT"|
-           class.y == "egg:WT" |
-           class.y == "seedling shoot:WT"|
-           class.y == "leaf:WT" |
-           class.y == "leaf:ddm1ab"|
-           class.y == "leaf:drm2"|
-           class.y == "ovary:WT") %>% 
-  ggplot(aes(x = reorder(class.x, Order.x), y = reorder(class.y, Order.y))) +
-  geom_tile(aes(fill = distance)) +
-  geom_text(aes(label = distance %>% round(2)), size = 5, fontface = "bold") +
-  scale_fill_gradientn(colours = brewer.pal(9, "Oranges"), na.value = NA) +
-  scale_x_discrete(labels = c("egg", "leaf ddm1ab", "ovary", "pollen VC", "leaf drm2",  "leaf WT",
-                               "sperm", "sd shoot")) +
-  scale_y_discrete(labels = c("egg", "leaf ddm1ab", "ovary", "pollen VC", "leaf drm2",  "leaf WT",
-                              "sperm", "sd shoot")) +
-  labs(x = NULL, 
-       y = NULL) +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  theme(text = element_text(size= 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
-  theme(axis.text.y=element_text(colour = "black", angle = 45, hjust = 1)) 
-
-ggsave(filename = "distance_heatmap.svg", width = 5, height = 5)
-```
-##Quantification of Euclidean distances
-```{r}
-siRNA_TE_pro_select <- siRNA_TE_pro %>% 
-  filter(sample_type == "egg"|
-           sample_type == "leaf" |
-           sample_type == "sperm")
-
-row.names(siRNA_TE_pro_select) <- paste(siRNA_TE_pro_select$sample_ID, 
-                                 siRNA_TE_pro_select$sample_type, 
-                                 siRNA_TE_pro_select$genotype, 
-                                 siRNA_TE_pro_select$type,
-                                 sep = ":")
-
-#siRNA_TE_pro_select 
-#dim(siRNA_TE_pro_select)
-
-dist_mat_s <- dist(siRNA_TE_pro_select[, 4:6], method = "e") %>% as.matrix()
-dist_mat_s[upper.tri(dist_mat_s)] <- NA
-#dist_mat_s
-#dim(dist_mat_s) 
-
-dist_s <- dist_mat_s %>% 
-  as.data.frame() %>% 
-  mutate(tag = row.names(dist_mat_s)) %>% 
-  separate(tag, c("sample_ID", "sample_type", "genotype", "type"), sep = ":") %>% 
-  mutate(class = paste(sample_type, genotype, sep = ":")) %>% 
-  gather("tag2", "distance", 1:nrow(siRNA_TE_pro_select)) %>% 
-  separate(tag2, c("sample_ID.y", "sample_type.y", "genotype.y", "type.y"), sep = ":") %>% 
-  mutate(class.y = paste(sample_type.y, genotype.y, sep = ":")) %>% 
-  filter(is.na(distance) == F)
-
-
-dist_s
-```
-
-
-```{r}
-dist_s1 <- dist_s %>% 
-  mutate(comparison = paste(class, class.y, sep = " vs. ")) %>% 
-  mutate(g = case_when(
-    str_detect(comparison, "egg") == T &
-      str_detect(comparison, "sperm") == F ~ "distance to egg",
-    str_detect(comparison, "sperm") == T &
-      str_detect(comparison, "egg") == F  ~ "distance to sperm" 
-  )) %>% 
-  filter(is.na(g) == F) %>% 
-  mutate(text = case_when(
-    paste(sample_type, sample_type.y) == "sperm sperm" ~ "sperm",
-    paste(sample_type, sample_type.y) == "egg egg" ~ "egg",
-    sample_type == "leaf" &
-      genotype == "WT" ~ "WT leaf",
-    sample_type == "leaf" &
-      genotype == "ddm1ab" ~ "ddm1ab leaf",
-    sample_type == "leaf" &
-      genotype == "drm2" ~ "drm2 leaf",
-    sample_type.y == "leaf" &
-      genotype.y == "WT" ~ "WT leaf",
-    sample_type.y == "leaf" &
-      genotype.y == "ddm1ab" ~ "ddm1ab leaf",
-    sample_type.y == "leaf" &
-      genotype.y == "drm2" ~ "drm2 leaf"
-  )) %>% 
-  mutate(text = factor(text, levels = c("WT leaf", "drm2 leaf", "ddm1ab leaf", "egg", "sperm")))
-
-  
-
-dist_s1
-```
-```{r}
-model_s <- lm(distance %>% sqrt() ~ text * g, dist_s1)
-anova(model_s)
-
-plot(model_s)
-```
-```{r}
-est_s <- emmeans(model_s, pairwise ~ text | g)
-
-est_s_bar <- CLD(est_s$emmeans, Letters = letters) %>% 
-  as.data.frame() %>% 
-  filter(is.na(emmean) == F) %>% 
-  mutate(distance = emmean ^ 2) %>% 
-  mutate(lower = lower.CL ^ 2) %>% 
-  mutate(upper = upper.CL ^ 2) %>% 
-  mutate(se = SE ^ 2) %>% 
-  mutate(h = case_when(
-    str_detect(g, "egg") ~ 0.05,
-    str_detect(g, "sperm") ~ 0.1
-  ))
-
-est_s_bar
-```
-
-
-```{r}
-dist_s1 %>% 
-  ggplot(aes(x = text, y = distance)) +
-  #stat_summary(geom = "line", aes(group = g, color = g), fun.y = mean, size = 2, alpha = 0.8) +
-  geom_boxplot(aes(fill = g), alpha = 0.75) +
-  geom_point(color = "grey20", alpha = 0.8, size = 1.5) +
-  facet_grid(.~ g, scales = "free_x", space = "free") + 
-  geom_text(data = est_s_bar, aes(label = .group, y = distance + h) ,fontface = "bold", size = 5) +
-  labs(x = NULL,
-       y = "Euclidean distance") +
-  #scale_color_manual(values = c("tomato1", "violetred2")) +
-  scale_fill_manual(values = c("tomato1", "dodgerblue2")) +
-  theme_minimal() +
-  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
-  theme(axis.text.y=element_text(colour = "black")) +
-  theme(legend.position = "none") +
-  theme(text = element_text(size= 18, face="bold")) 
-
-ggsave(filename = "distance to gametes.svg", height = 3, width = 8)
-```
-
-#ANOVA
-```{r}
-#siRNA_TE_pro
-siRNA_TE_pro_long <- siRNA_TE_pro %>% 
-  gather("RNA_type", "proportion", 4:13) %>% 
-  mutate(class = paste(sample_type, genotype, sep = ":"))
-
-siRNA_TE_pro_long %>% head(10)
-```
-```{r}
-model_pro <- lm(log10(proportion) ~ class * RNA_type, siRNA_TE_pro_long %>% 
-                  filter(RNA_type == "CentO"|
-                          RNA_type == "Gypsy" |
-                          RNA_type == "TIR" |
-                           RNA_type == "miRNAs"))
-anova(model_pro)
-```
-```{r}
-est_TE <- emmeans(model_pro, pairwise ~ class | RNA_type)
-est_TE_bar <- CLD(est_TE$emmeans, Letters = letters) %>% 
-  as.data.frame() %>% 
-  separate(class, remove = F, c("sample_type", "genotype"), sep = ":") %>% 
-  mutate(proportion = 10^emmean) %>% 
-  mutate(upper = 10^upper.CL) %>% 
-  mutate(lower = 10^lower.CL) %>% 
-  mutate(genotype = factor(genotype, levels = c("WT", "ddm1ab", "drm2")))  
- 
-
-
-est_TE_bar
-
-```
-
-```{r}
-est_TE_bar %>% 
-   mutate(text.y = case_when(
-    RNA_type == "CentO" ~ 0.0023,
-    RNA_type == "Gypsy" ~ 0.125,
-    RNA_type == "TIR" ~ 0.225,
-    RNA_type == "miRNAs" ~ 0.125
-    
-  )) %>%
-  ggplot(aes(x = sample_type, y = proportion)) +
-  facet_grid(RNA_type ~ genotype, scales = "free", space = "free_x", switch = "x") +
-  geom_bar(stat = "identity", aes(fill = sample_type), alpha = 0.8) +
-  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.3) +
-  geom_text(aes(label = .group, y = proportion + text.y), fontface = "bold", size = 5) +
-  scale_fill_manual(values = pal) +
-  scale_x_discrete(labels = NULL) +
-  labs(x = NULL,
-       y = "proportion",
-       fill = "") +
-  theme_minimal() +
-  theme(text = element_text(size= 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
-  theme(axis.text.y=element_text(colour = "black")) +
-  theme(legend.position = "bottom")
-
-
-ggsave(filename = "TE_pro_anova.png", width = 7, height = 7)
-```
-
-
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
