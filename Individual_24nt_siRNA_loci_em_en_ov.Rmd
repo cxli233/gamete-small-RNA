@@ -28,8 +28,8 @@ library(RColorBrewer)
 library(stringr)
 library(svglite)
 ```
-#g3
-##load data
+
+#load data
 ```{r}
 wt1_em_egg <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/wt1_em_S45_L005_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_egg-specific_24siRNAs.meth", 
     "\t", escape_double = FALSE, col_names = FALSE, 
@@ -354,6 +354,115 @@ ov6_inter <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA
     "\t", escape_double = FALSE, col_names = FALSE, 
     trim_ws = TRUE, skip = 1)
 ```
+
+```{r}
+br1_egg <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br1_S52_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_egg-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br1_sd <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br1_S52_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_seedling-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br1_sp <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br1_S52_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br1_inter <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br1_S52_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-seedling-egg_24siRNAs_intersection.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+```
+
+```{r}
+br2_egg <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br2_S53_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_egg-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br2_sd <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br2_S53_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_seedling-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br2_sp <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br2_S53_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br2_inter <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br2_S53_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-seedling-egg_24siRNAs_intersection.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+```
+
+```{r}
+br3_egg <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br3_S54_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_egg-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br3_sd <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br3_S54_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_seedling-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br3_sp <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br3_S54_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br3_inter <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br3_S54_L003_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-seedling-egg_24siRNAs_intersection.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+```
+
+```{r}
+br4_egg <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br4_S7_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_egg-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br4_sd <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br4_S7_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_seedling-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br4_sp <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br4_S7_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br4_inter <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br4_S7_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-seedling-egg_24siRNAs_intersection.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+```
+
+```{r}
+br5_egg <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br5_S8_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_egg-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br5_sd <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br5_S8_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_seedling-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br5_sp <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br5_S8_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br5_inter <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br5_S8_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-seedling-egg_24siRNAs_intersection.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+```
+
+```{r}
+br6_egg <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br6_S9_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_egg-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br6_sd <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br6_S9_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_seedling-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br6_sp <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br6_S9_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-specific_24siRNAs.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+
+br6_inter <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/br6_S9_L001_R1_001.fastq.gz.trimmed.fastq.gz.filtered.fastq.gz.sorted.bam_sperm-seedling-egg_24siRNAs_intersection.meth", 
+    "\t", escape_double = FALSE, col_names = FALSE, 
+    trim_ws = TRUE, skip = 1)
+```
+
 
 ##tidy data
 ```{r}
@@ -962,9 +1071,147 @@ ov6_inter1 <- ov6_inter %>%
 colnames(ov6_inter1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
 ```
 
+```{r}
+br1_egg1 <- br1_egg %>% 
+  clean() %>% 
+  mutate(sample_ID = "br1") %>% 
+  mutate(bin = "egg-specific") 
+colnames(br1_egg1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br1_sd1 <- br1_sd %>% 
+  clean() %>% 
+  mutate(sample_ID = "br1") %>% 
+  mutate(bin = "seedling-specific") 
+colnames(br1_sd1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br1_sp1 <- br1_sp %>% 
+  clean() %>% 
+  mutate(sample_ID = "br1") %>% 
+  mutate(bin = "sperm-specific") 
+colnames(br1_sp1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br1_inter1 <- br1_inter %>% 
+  clean() %>% 
+  mutate(sample_ID = "br1") %>% 
+  mutate(bin = "intersect.") 
+colnames(br1_inter1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+```
 
 ```{r}
-g3 <- rbind(wt1_em_egg1, wt1_em_sd1, wt1_em_sp1, wt1_em_inter1,
+br2_egg1 <- br2_egg %>% 
+  clean() %>% 
+  mutate(sample_ID = "br2") %>% 
+  mutate(bin = "egg-specific") 
+colnames(br2_egg1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br2_sd1 <- br2_sd %>% 
+  clean() %>% 
+  mutate(sample_ID = "br2") %>% 
+  mutate(bin = "seedling-specific") 
+colnames(br2_sd1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br2_sp1 <- br2_sp %>% 
+  clean() %>% 
+  mutate(sample_ID = "br2") %>% 
+  mutate(bin = "sperm-specific") 
+colnames(br2_sp1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br2_inter1 <- br2_inter %>% 
+  clean() %>% 
+  mutate(sample_ID = "br2") %>% 
+  mutate(bin = "intersect.") 
+colnames(br2_inter1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+```
+
+```{r}
+br3_egg1 <- br3_egg %>% 
+  clean() %>% 
+  mutate(sample_ID = "br3") %>% 
+  mutate(bin = "egg-specific") 
+colnames(br3_egg1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br3_sd1 <- br3_sd %>% 
+  clean() %>% 
+  mutate(sample_ID = "br3") %>% 
+  mutate(bin = "seedling-specific") 
+colnames(br3_sd1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br3_sp1 <- br3_sp %>% 
+  clean() %>% 
+  mutate(sample_ID = "br3") %>% 
+  mutate(bin = "sperm-specific") 
+colnames(br3_sp1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br3_inter1 <- br3_inter %>% 
+  clean() %>% 
+  mutate(sample_ID = "br3") %>% 
+  mutate(bin = "intersect.") 
+colnames(br3_inter1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+```
+
+```{r}
+br4_egg1 <- br4_egg %>% 
+  clean() %>% 
+  mutate(sample_ID = "br4") %>% 
+  mutate(bin = "egg-specific") 
+colnames(br4_egg1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br4_sd1 <- br4_sd %>% 
+  clean() %>% 
+  mutate(sample_ID = "br4") %>% 
+  mutate(bin = "seedling-specific") 
+colnames(br4_sd1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br4_sp1 <- br4_sp %>% 
+  clean() %>% 
+  mutate(sample_ID = "br4") %>% 
+  mutate(bin = "sperm-specific") 
+colnames(br4_sp1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br4_inter1 <- br4_inter %>% 
+  clean() %>% 
+  mutate(sample_ID = "br4") %>% 
+  mutate(bin = "intersect.") 
+colnames(br4_inter1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+```
+
+```{r}
+br5_egg1 <- br5_egg %>% 
+  clean() %>% 
+  mutate(sample_ID = "br5") %>% 
+  mutate(bin = "egg-specific") 
+colnames(br5_egg1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br5_sd1 <- br5_sd %>% 
+  clean() %>% 
+  mutate(sample_ID = "br5") %>% 
+  mutate(bin = "seedling-specific") 
+colnames(br5_sd1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br5_sp1 <- br5_sp %>% 
+  clean() %>% 
+  mutate(sample_ID = "br5") %>% 
+  mutate(bin = "sperm-specific") 
+colnames(br5_sp1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br5_inter1 <- br5_inter %>% 
+  clean() %>% 
+  mutate(sample_ID = "br5") %>% 
+  mutate(bin = "intersect.") 
+colnames(br5_inter1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+```
+
+```{r}
+br6_egg1 <- br6_egg %>% 
+  clean() %>% 
+  mutate(sample_ID = "br6") %>% 
+  mutate(bin = "egg-specific") 
+colnames(br6_egg1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br6_sd1 <- br6_sd %>% 
+  clean() %>% 
+  mutate(sample_ID = "br6") %>% 
+  mutate(bin = "seedling-specific") 
+colnames(br6_sd1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br6_sp1 <- br6_sp %>% 
+  clean() %>% 
+  mutate(sample_ID = "br6") %>% 
+  mutate(bin = "sperm-specific") 
+colnames(br6_sp1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+br6_inter1 <- br6_inter %>% 
+  clean() %>% 
+  mutate(sample_ID = "br6") %>% 
+  mutate(bin = "intersect.") 
+colnames(br6_inter1) <- c("chr", "start", "mCG", "mCHG", "mCHH", "sample_ID", "bin")
+```
+
+
+```{r}
+g3_full <- rbind(wt1_em_egg1, wt1_em_sd1, wt1_em_sp1, wt1_em_inter1,
             wt2_em_egg1, wt2_em_sd1, wt2_em_sp1, wt2_em_inter1,
             wt3_em_egg1, wt3_em_sd1, wt3_em_sp1, wt3_em_inter1,
             wt1_en_egg1, wt1_en_sd1, wt1_en_sp1, wt1_en_inter1,
@@ -981,7 +1228,13 @@ g3 <- rbind(wt1_em_egg1, wt1_em_sd1, wt1_em_sp1, wt1_em_inter1,
             ov3_egg1, ov3_sd1, ov3_sp1, ov3_inter1,
             ov4_egg1, ov4_sd1, ov4_sp1, ov4_inter1,
             ov5_egg1, ov5_sd1, ov5_sp1, ov5_inter1,
-            ov6_egg1, ov6_sd1, ov6_sp1, ov6_inter1
+            ov6_egg1, ov6_sd1, ov6_sp1, ov6_inter1,
+            br1_egg1, br1_sd1, br1_sp1, br1_inter1,
+            br2_egg1, br2_sd1, br2_sp1, br2_inter1,
+            br3_egg1, br3_sd1, br3_sp1, br3_inter1,
+            br4_egg1, br4_sd1, br4_sp1, br4_inter1,
+            br5_egg1, br5_sd1, br5_sp1, br5_inter1,
+            br6_egg1, br6_sd1, br6_sp1, br6_inter1
             ) %>% 
   mutate(bins = factor(bin, levels = c(
     "egg-specific",
@@ -992,51 +1245,171 @@ g3 <- rbind(wt1_em_egg1, wt1_em_sd1, wt1_em_sp1, wt1_em_inter1,
   mutate(sample_type = case_when(
     str_detect(sample_ID, "em") ~ "embryo",
     str_detect(sample_ID, "en") ~ "endosperm",
-    str_detect(sample_ID, "ov") ~ "ovary"
+    str_detect(sample_ID, "ov") ~ "ovary",
+    str_detect(sample_ID, "br") ~ "bract"
   )) %>% 
-   mutate(sample_type = factor(sample_type, levels = c("embryo", "endosperm", "ovary"))) %>% 
+   mutate(sample_type = factor(sample_type, levels = c("embryo", "endosperm", "ovary", "bract"))) %>% 
   mutate(geno = case_when(
     str_detect(sample_ID, "wt") ~ "WT",
     str_detect(sample_ID, "ov") ~ "WT",
+    str_detect(sample_ID, "br") ~ "WT",
     str_detect(sample_ID, "drm") ~ "drm2"
   )) %>% 
   mutate(geno = factor(geno, levels = c("drm2", "WT"))) %>% 
   gather("context", "methylation", 3:5) %>% 
-  filter(is.na(methylation) == F) %>% 
+  filter(is.na(methylation) == F) 
+```
+
+```{r}
+g3 <- g3_full %>% 
   group_by(context, sample_type, geno, start, bins) %>% 
   summarise(methylation = mean(methylation)) %>% 
   ungroup()
-
 ```
-
 
 
 ```{r}
-g3 %>% 
-  ggplot(aes(x = bins, y = methylation)) +
-  facet_grid(context ~ sample_type + geno, scales = "free", space = "free", switch = "both") +
-  #geom_bar(stat = "summary", aes(fill = bins), position = position_dodge(), alpha = 0.8, fun.y = mean) +
-  stat_summary(geom = "crossbar", fun.data = "median_hilow", width = 0.8, aes(fill = bins), alpha = 0.8) +
-  scale_fill_manual(values = c("tomato1", "seagreen", "dodgerblue", "grey60")) +
+g3_s <- g3 %>% 
+  group_by(sample_type, bins, context, geno) %>% 
+  summarise(median = median(methylation),
+            IQR = IQR(methylation),
+            upper = quantile(methylation, 0.75),
+            lower = quantile(methylation, 0.25),
+            UL = quantile(methylation, 0.975),
+            LL = quantile(methylation, 0.025),
+            n = n()) %>% 
+  ungroup()
+
+g3_s %>% filter(context == "mCHH")
+```
+
+#plot
+```{r}
+g3_s %>% 
+  # filter(context == "mCHH") %>% 
+  ggplot(aes(x = bins)) +
+  facet_grid(context ~ sample_type + geno, scales = "free", switch = "both") +
+  geom_crossbar(aes(ymin = lower, ymax = upper, y = median, fill = bins), alpha = 0.8) +
+  geom_segment(aes(y = upper, yend = UL, x = bins, xend = bins), size = 0.75) +
+  geom_segment(aes(y = lower, yend = LL, x = bins, xend = bins), size = 0.75) +
+  geom_errorbar(aes(ymin = UL, ymax = UL), width = 0.3, size = 1) +
+  geom_errorbar(aes(ymin = LL, ymax = LL), width = 0.3, size = 1) +
+  scale_fill_manual(values = c("tomato1", "seagreen", "dodgerblue2", "grey60")) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8)) +
   labs(x = "methylome",
-       fill = NULL,
+       fill = "siRNA loci",
        y = NULL) +
   theme_minimal()+
   theme(legend.position = "none", strip.placement = "outside") + 
-  theme(text = element_text(size= 18, face="bold", colour = "black")) +
+  theme(text = element_text(size = 18, face="bold", colour = "black")) +
   theme(axis.text.x = element_blank()) +
-  theme(axis.text.y = element_text(colour = "black")) 
+  theme(axis.text.y = element_text(colour = "black"))
 
-ggsave(filename = "rice_24nt_bin_meth_em_en_ov_crossbar.svg", height = 5, width = 6.5)
+ggsave(filename = "rice_24nt_bin_meth_em_en_ov_br_box.svg", height = 5, width = 9)
 ```
 
+```{r}
+g3_s %>% 
+  filter(context == "mCHH") %>% 
+  mutate(sample_type = as.character(sample_type)) %>% 
+  mutate(sample_type2 =  case_when(
+   sample_type == "endosperm" ~ "endo.",
+   sample_type != "endosperm" ~ sample_type
+  )) %>%
+  mutate(sample_type3 = factor(sample_type2, levels = c(
+    "embryo", "endo.", "ovary", "bract"
+  ))) %>%
+  ggplot(aes(x = bins)) +
+  facet_grid(context ~ sample_type3 + geno, scales = "free", switch = "both") +
+  geom_crossbar(aes(ymin = lower, ymax = upper, y = median, fill = bins), alpha = 0.8) +
+  geom_segment(aes(y = upper, yend = UL, x = bins, xend = bins), size = 0.75) +
+  geom_segment(aes(y = lower, yend = LL, x = bins, xend = bins), size = 0.75) +
+  geom_errorbar(aes(ymin = UL, ymax = UL), width = 0.3, size = 1) +
+  geom_errorbar(aes(ymin = LL, ymax = LL), width = 0.3, size = 1) +
+  scale_fill_manual(values = c("tomato1", "seagreen", "dodgerblue2", "grey60")) +
+  scale_y_continuous(breaks = c(0, 0.2, 0.4, 0.6, 0.8)) +
+  labs(x = "methylome",
+       fill = "siRNA loci",
+       y = NULL) +
+  theme_minimal()+
+  theme(legend.position = "none", strip.placement = "outside") + 
+  theme(text = element_text(size = 18, face="bold", colour = "black")) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.text.y = element_text(colour = "black"))
 
+ggsave(filename = "rice_24nt_bin_meth_em_en_ov_br_box_CHH.svg", height = 4, width = 6.5)
+```
 
+#modeling
 
+```{r}
+model_chh_g3 <- glm(methylation ~ bins * sample_type, family = binomial(link = "logit"), data = g3 %>% 
+                   filter(context == "mCHH") %>% 
+                     filter(geno == "WT"))
+```
 
+```{r}
+est_g3 <- emmeans(model_chh_g3, pairwise ~ bins|sample_type)
 
+```
 
+```{r}
+logit <- function(p){log(
+  p / (1-p)
+)}
+invlogit <- function(x){
+  1/(1 + exp(-x))
+}
+```
 
+```{r}
+results_g3 <- CLD(est_g3$emmean, Letters = letters) %>% 
+  as.data.frame() %>% 
+  mutate(mean_mCHH = invlogit(emmean)) %>% 
+  mutate(upper.CL = invlogit(asymp.UCL)) %>% 
+  mutate(lower.CL = invlogit(asymp.LCL)) #%>% 
+  # mutate(tag = paste(geno, sample_type, sep = "_")) %>% 
+  # filter(tag != "drm2_bract") %>% 
+  # filter(tag != "drm2_ovary")
+
+head(results_g3)
+```
+```{r}
+results_g3 %>% 
+  filter(sample_type == "ovary" |
+           sample_type == "bract") 
+```
+
+```{r}
+results_g3 %>% 
+  mutate(bins_f = factor(bins, levels = c(
+    "egg-specific", "seedling-specific", "sperm-specific", "intersect."
+  ))) %>% 
+  ggplot(aes(x = bins_f, y = mean_mCHH)) +
+  facet_grid(. ~ sample_type, switch = "both") +
+  geom_point(aes(color = bins), alpha = 0.8, size = 3) + 
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.3) +
+  geom_text(aes(label = .group, y = mean_mCHH + 0.025), size = 5, fontface = "bold") +
+  scale_color_manual(values = c("tomato1", "seagreen", "dodgerblue2", "grey60")) +
+  labs(x = "methylome",
+       color = "siRNA loci",
+       y = "estimated mean mCHH") +
+  theme_minimal()+
+  theme(legend.position = "none", strip.placement = "outside") + 
+  theme(text = element_text(size = 18, face="bold", colour = "black")) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.text.y = element_text(colour = "black"))
+
+ggsave("Tukey_test_em_en_ov_br.pdf", height = 4, width = 6.5)
+ggsave("Tukey_test_em_en_ov_br.svg", height = 4, width = 6.5)
+```
+
+```{r}
+contrast_g3 <- summary(est_g3$contrasts) %>% 
+  as.data.frame()
+
+write_excel_csv(contrast_g3, "constrast_g3.csv")
+```
 
 
 
