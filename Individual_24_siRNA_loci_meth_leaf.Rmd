@@ -28,8 +28,8 @@ library(stringr)
 library(svglite)
 ```
 
-#group2
-##load data
+
+#load data
 ```{r}
 wt_in_egg <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt_siRNA_loci_methylation Feb20/24nt_loci_meth_individual/SRR3503136-7.trimmed.fastq.gz.sorted.bam_egg-specific_24siRNAs.meth", 
     "\t", escape_double = FALSE, col_names = FALSE, 
@@ -213,8 +213,23 @@ g2 <- rbind(wt_in_egg1, wt_in_sd1, wt_in_sp1, wt_in_inter1,
   mutate(genotype = factor(genotype, levels = c("ddm1ab", "drm2", "WT")))
 ```
 
+
 ```{r}
-g2 %>% 
+g2_s <- g2 %>% 
+  group_by(bins, context, genotype) %>% 
+  summarise(median = median(methylation), 
+            IQR = IQR(methylation), 
+            upper = quantile(methylation, 0.75),
+            lower = quantile(methylation, 0.25),
+            UL = quantile(methylation, 0.975),
+            LL = quantile(methylation, 0.025),
+            n = n()) %>% 
+  ungroup() 
+
+g2_s
+```
+```{r}
+g2_s %>% 
   mutate(bins1 = case_when(
     str_detect(bins, "egg") ~ "egg-\nspecific\nloci",
     str_detect(bins, "seedling") ~ "seedling-\nspecific\nloci",
@@ -224,53 +239,76 @@ g2 %>%
   mutate(bins2 = factor(bins1, levels = c(
     "egg-\nspecific\nloci", "seedling-\nspecific\nloci", "sperm-\nspecific\nloci", "intersect."
   ))) %>% 
-  ggplot(aes(x = genotype, y = methylation)) +
-  facet_grid(context ~ bins2, scales = "free", switch = "y") +
-  stat_summary(geom = "crossbar", fun.data = "median_hilow", aes(fill = genotype), alpha = 0.8, width = 0.8) +
-  #geom_bar(stat = "summary", aes(fill = genotype), alpha = 0.8) +
-  scale_fill_manual(values = c("red", "blue", "grey40")) +
-  labs(x = "leaf methylome",
-       fill = NULL,
-       y = NULL) +
-  theme_minimal()+
-  theme(legend.position = "none", strip.placement = "outside", panel.spacing.y = unit(1, "line")) + 
-  theme(text = element_text(size= 18, face="bold", colour = "black")) +
-  theme(axis.text.x = element_text(colour = "black", angle = -90, hjust = 0)) +
-  theme(axis.text.y = element_text(colour = "black"))
-
-ggsave(filename = "rice_24nt_bin_meth_ddm1_drm2.svg", height = 5, width = 5)  
-```
-```{r}
-g2_summary <- g2 %>% 
-  group_by(bins, context, genotype) %>% 
-  summarise(median = median(methylation), IQR = IQR(methylation), N = n()) %>% 
-  ungroup() %>% 
-  mutate(upper = median + 1.58*IQR/sqrt(N)) %>% 
-  mutate(lower_notch =  median - 1.58*IQR/sqrt(N)) %>% 
-  mutate(lower = case_when(
-    lower_notch > 0 ~ lower_notch,
-    lower_notch <= 0 ~ 0
-  )) %>% 
-  select(-lower_notch)
-
-g2_summary
-```
-```{r}
-g2_summary %>% 
-  mutate(bins1 = case_when(
-    str_detect(bins, "egg") ~ "egg-\nspecific\nloci",
-    str_detect(bins, "seedling") ~ "seedling-\nspecific\nloci",
-    str_detect(bins, "sperm") ~ "sperm-\nspecific\nloci",
-    str_detect(bins, "intersect") ~ "intersect."
-  )) %>%
-  mutate(bins2 = factor(bins1, levels = c(
-    "egg-\nspecific\nloci", "seedling-\nspecific\nloci", "sperm-\nspecific\nloci", "intersect."
-  ))) %>%
   ggplot(aes(x = genotype)) +
   facet_grid(context ~ bins2, scales = "free", switch = "y") +
-  geom_point(aes(y = median, color = "black")) +
-  geom_errorbar(aes(ymax = upper, ymin = lower), width = 0.3) +
+  geom_crossbar(aes(ymin = lower, ymax = upper, y = median, fill = genotype), alpha = 0.8) +
+  geom_segment(aes(y = upper, yend = UL, x = genotype, xend = genotype), size = 0.75) +
+  geom_segment(aes(y = lower, yend = LL, x = genotype, xend = genotype), size = 0.75) +
+  geom_errorbar(aes(ymin = UL, ymax = UL), width = 0.3, size = 1) +
+  geom_errorbar(aes(ymin = LL, ymax = LL), width = 0.3, size = 1) +
   scale_fill_manual(values = c("red", "blue", "grey40")) +
+  labs(x = "leaf methylome",
+       fill = NULL,
+       y = NULL) +
+  theme_minimal()+
+  theme(legend.position = "bottom", strip.placement = "outside", panel.spacing.y = unit(1, "line")) + 
+  theme(text = element_text(size= 18, face="bold", colour = "black")) +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.text.y = element_text(colour = "black"))
+
+ggsave(filename = "rice_24nt_bin_meth_ddm1_drm2_box.svg", height = 5, width = 5)  
+```
+
+
+
+
+#modeling
+```{r}
+head(g2)
+```
+
+```{r}
+model_chh_g2 <- glm(methylation ~ context * genotype * bin, family = binomial(link = "logit"), data = g2)
+```
+```{r}
+est_g2 <- emmeans(model_chh_g2, pairwise ~ genotype|bin|context)
+
+```
+```{r}
+logit <- function(p){log(
+  p / (1-p)
+)}
+invlogit <- function(x){
+  1/(1 + exp(-x))
+}
+```
+
+```{r}
+results_g2 <- CLD(est_g2$emmean, Letters = letters) %>% 
+  as.data.frame() %>% 
+  mutate(mean_methylation = invlogit(emmean)) %>% 
+  mutate(upper.CL = invlogit(asymp.UCL)) %>% 
+  mutate(lower.CL = invlogit(asymp.LCL))
+
+results_g2
+```
+```{r}
+results_g2 %>% 
+  mutate(bins1 = case_when(
+    str_detect(bin, "egg") ~ "egg-\nspecific\nloci",
+    str_detect(bin, "seedling") ~ "seedling-\nspecific\nloci",
+    str_detect(bin, "sperm") ~ "sperm-\nspecific\nloci",
+    str_detect(bin, "intersect") ~ "intersect."
+  )) %>% 
+  mutate(bins2 = factor(bins1, levels = c(
+    "egg-\nspecific\nloci", "seedling-\nspecific\nloci", "sperm-\nspecific\nloci", "intersect."
+  ))) %>% 
+  ggplot(aes(x = genotype, y = mean_methylation)) +
+  facet_grid(context ~ bins2, scales = "free", switch = "y") +
+  geom_point(aes(color = genotype), alpha = 0.8, size = 3) + 
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL), width = 0.3) +
+  geom_text(aes(label = .group, y = mean_methylation + 0.1), size = 5, fontface = "bold") +
+  scale_color_manual(values = c("red", "blue", "grey40")) +
   labs(x = "leaf methylome",
        fill = NULL,
        y = NULL) +
@@ -279,127 +317,14 @@ g2_summary %>%
   theme(text = element_text(size= 18, face="bold", colour = "black")) +
   theme(axis.text.x = element_text(colour = "black", angle = -90, hjust = 0)) +
   theme(axis.text.y = element_text(colour = "black"))
-```
 
-```{r}
-g2 %>% 
-  mutate(bins1 = case_when(
-    str_detect(bins, "egg") ~ "egg-\nspecific\nloci",
-    str_detect(bins, "seedling") ~ "seedling-\nspecific\nloci",
-    str_detect(bins, "sperm") ~ "sperm-\nspecific\nloci",
-    str_detect(bins, "intersect") ~ "intersect."
-  )) %>%
-  mutate(bins2 = factor(bins1, levels = c(
-    "egg-\nspecific\nloci", "seedling-\nspecific\nloci", "sperm-\nspecific\nloci", "intersect."
-  ))) %>%
-  filter(genotype != "ddm1ab") %>% 
-  select(-sample_ID) %>% 
-  spread(genotype, methylation) %>% 
-  ggplot(aes(x = WT, y = drm2)) +
-  facet_grid(context ~ bins2, switch = "y") +
-  geom_point(size = 0.5, color = "grey60") + 
-  geom_abline(slope = 1, intercept = 0, linetype = 4, color = "red") + 
-  labs(x = "WT",
-       y = "drm2") +
-  theme_minimal()+
-  theme(legend.position = "none", strip.placement = "outside", panel.spacing.y = unit(1, "line")) + 
-  theme(text = element_text(size= 18, face="bold", colour = "black")) +
-  theme(axis.text.x = element_text(colour = "black", angle = -90, hjust = 0)) +
-  theme(axis.text.y = element_text(colour = "black"))
-
-ggsave(filename = "wt_vs_drm2.png", height = 5, width = 5)
-```
-#stat
-```{r}
-
-g2.cg.egg <- g2 %>% filter(context == "mCG", bins == "egg-specific") 
-
-
-g2.cg.egg.p <- pairwise.wilcox.test(x = g2.cg$methylation, g = g2.cg$genotype, p.adjust.method = "bonf")
-str(g2.cg.egg.p)
-```
-
-```{r}
-test <- function(c, b){
-  df1 = g2 %>% 
-    filter(context == `c`) %>% 
-    filter(bins == `b`)
-  
-  pairwise.wilcox.test(x = df1$methylation,
-                       g = df1$genotype,
-                       p.adjust.method = "none")$p.value  
-}
+ggsave(filename = "Tukey_test_ddm1_drm2.pdf", height = 5, width = 5) 
 ```
 ```{r}
-g2.cg.egg.p1 <- test(c = "mCG", b = "egg-specific")
+contrast_g2 <- summary(est_g2$contrasts) %>% 
+  as.data.frame()
 
-g2.cg.egg.p1
-```
-```{r}
-# bins <- g2$bins %>% unique()
-# context <- g2$context %>% unique()
-bins <- c("egg-specific", "seedling-specific", "sperm-specific", "intersect.")
-context <- c("mCG", "mCHG", "mCHH")
-grouping <- expand.grid(bins, context) %>% as.data.frame()
-
-colnames(grouping) <- c("bins", "context")
-grouping
-```
-```{r}
-results <- mapply(test, b = grouping$bins, c = grouping$context) %>%
-  as.data.frame() 
-
-results
-```
-```{r}
-results2 <- results %>% 
-  t() %>% 
-  cbind(grouping) %>%
-  gather("output", "p.value", 1:4) %>%  
-  filter(output == 2 | 
-           output == 4) %>% 
-  mutate(comparison = case_when(
-    # output == 1 ~ "drm2 - ddm1ab",
-    output == 2 ~ "WT - ddm1ab",
-    # output == 3 ~ "drm2 - drm2",
-    output == 4 ~ "WT - drm2"
-  )) %>% 
- # filter(is.na(p.value) == F) %>% 
-  separate(comparison, c("genotype.x", "genotype.y"), sep = " - ") %>% 
-  select(-output) %>% 
-  group_by(bins, context) %>% 
-  mutate(adjusted.p.value = p.adjust(p.value, method = "bonf")) %>% 
-  ungroup()
-  
-
-results2
-```
-```{r}
-results2 %>% 
-    mutate(bins1 = case_when(
-    str_detect(bins, "egg") ~ "egg-\nspecific\nloci",
-    str_detect(bins, "seedling") ~ "seedling-\nspecific\nloci",
-    str_detect(bins, "sperm") ~ "sperm-\nspecific\nloci",
-    str_detect(bins, "intersect") ~ "intersect."
-  )) %>%
-  mutate(bins2 = factor(bins1, levels = c(
-    "egg-\nspecific\nloci", "seedling-\nspecific\nloci", "sperm-\nspecific\nloci", "intersect."
-  ))) %>%
-  ggplot(aes(x = genotype.x, y = genotype.y)) +
-  geom_tile(aes(fill = adjusted.p.value), alpha = 0.8) + 
-  geom_text(aes(label = adjusted.p.value %>% round(1)), size = 5, fontface = "bold") +
-  scale_fill_gradientn(colours = rev(brewer.pal(11, "Spectral")), na.value = NA) +
-  labs(x = NULL,
-       y = NULL, 
-       fill = "adjusted\np value") + 
-  facet_grid(context ~ bins2) +
-  theme_minimal() +
-  theme(legend.position = "bottom", legend.key.width = unit(2, units = "lines")) +
-  theme(text = element_text(size = 18, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black")) +
-  theme(axis.text.y=element_text(colour = "black")) 
-
-ggsave("leaf_meth_pvalues.svg", height = 5, width = 5)
+write_excel_csv(contrast_g2, "constrast_g2.csv")
 ```
 
 
