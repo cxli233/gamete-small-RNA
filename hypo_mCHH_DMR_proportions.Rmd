@@ -1,0 +1,108 @@
+---
+title: "hypo_mCHH DMR proportions"
+author: "Chenxin Li"
+date: "February 14, 2019"
+output:
+  html_notebook:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(ggplot2)
+library(emmeans)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(readxl)
+library(vegan)
+library(edgeR)
+library(RColorBrewer)
+library(stringr)
+library(svglite)
+library(lme4)
+library(lmerTest)
+```
+
+
+#DMR counts in 24nt loci
+```{r}
+wt_52_eligible <- read.table("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt siRNA loci DMR counts/24nt siRNA loci DMR counts/eligible regions/CHH_wt-52_dmr100.txt.o883923", quote="\"", comment.char="")
+
+wt_52_hypo <- read.table("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/methylation/24nt siRNA loci DMR counts/24nt siRNA loci DMR counts/hypo DMRs/CHH_wt-52_dmr100_hypo_cutoffs_5-0.001-0.25-0.3.txt.o883908", quote="\"", comment.char="")
+```
+
+```{r}
+colnames(wt_52_eligible) <- c("eligible_regions", "tag1")
+colnames(wt_52_hypo) <- c("hypo_CHH", "tag2")
+```
+##genome-wide
+```{r}
+wt_52 <- cbind(wt_52_hypo, wt_52_eligible)
+wt_52
+
+wt_52g <- cbind(wt_52_hypo, wt_52_eligible) %>% 
+  filter(tag1 == "CHH_wt-52_dmr100.txt") %>% 
+  mutate(proportion = hypo_CHH / eligible_regions) 
+
+wt_52g
+
+wt_52t <- cbind(wt_52_hypo, wt_52_eligible) %>% 
+  filter(tag1 == "total") %>% 
+  mutate(proportion = hypo_CHH / eligible_regions) 
+
+wt_52t
+```
+#hypergeometric tests
+```{r}
+wt_52 <- cbind(wt_52_hypo, wt_52_eligible) %>% 
+  filter(tag1 != "CHH_wt-52_dmr100.txt") %>% 
+  filter(tag1 != "total") %>% 
+  mutate(bin = case_when(
+    str_detect(tag1, "egg") ~ "egg-\nspecific",
+    str_detect(tag1, "seedling") ~ "seedling-\nspecific",
+    str_detect(tag1, "sperm") ~ "sperm\nspecific",
+    str_detect(tag1, "inter") ~ "intersect."
+  )) %>% 
+  mutate(bin = factor(bin, levels = c(
+    "egg-\nspecific", "seedling-\nspecific", "sperm\nspecific", "intersect."
+  ))) %>% 
+  mutate(proportion = hypo_CHH / eligible_regions) %>% 
+  mutate(genome_hypo_CHH = wt_52g[1, 1] 
+         %>% as.numeric()) %>%
+  mutate(genome_eligible = wt_52g[1, 3] %>% 
+           as.numeric()) %>% 
+  mutate(lower = phyper(q = hypo_CHH, m = genome_hypo_CHH, n = genome_eligible - genome_hypo_CHH, k = eligible_regions)) %>% 
+  mutate(upper = 1 - lower) %>% 
+  mutate(p.value = min(lower, upper) * 2 * nrow(.))
+
+wt_52
+```
+#plot
+```{r}
+wt_52 %>% 
+  ggplot(aes(x = bin, y = proportion)) +
+  geom_bar(stat = "identity", aes(fill = bin), alpha = 0.8) +
+  scale_fill_manual(values = c("tomato1", "seagreen", "dodgerblue", "grey60")) + 
+  geom_hline(yintercept = wt_52g$proportion[1], linetype = 4) +
+  labs(fill = "24nt siRNA loci",
+       color = NULL,
+       x = NULL, 
+       y = "porprotion hypo-CHH\nDMR in drm2 embryo") + 
+  theme_minimal() +
+  theme(legend.position = "none") + 
+  theme(text = element_text(size= 18, face ="bold", colour = "black")) +
+  theme(axis.text.x = element_text(colour = "black", angle = 45, hjust = 1)) +
+  theme(axis.text.y = element_text(colour = "black")) 
+  
+ggsave("mCHH_proportions.svg", height = 4, width = 3.75)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
