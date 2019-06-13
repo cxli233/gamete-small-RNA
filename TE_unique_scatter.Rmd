@@ -99,7 +99,7 @@ g24_l <- g24 %>%
 ```
 
 ```{r}
-
+#arrange TIR data
 t24_l <- t24 %>% 
   mutate(tag = paste(X, X.3, X.4, sep = "-")) %>% 
   mutate(class = "TIR") %>% 
@@ -214,6 +214,7 @@ mRNA_info_l %>% head(10)
 
 
 ```{r}
+#arrange Gypsy mRNA data
 gm_l <- gm %>% 
   mutate(tag = paste(X, X.3, X.4, sep = "-")) %>%
   mutate(class = "Gypsy") %>% 
@@ -254,6 +255,7 @@ gm_l <- gm %>%
 gm_l %>% head(10)
 ```
 ```{r}
+#arrange TIR mRNA data
 tm_l <- tm %>% 
   mutate(tag = paste(X, X.3, X.4, sep = "-")) %>%
   mutate(class = "TIR") %>% 
@@ -312,15 +314,6 @@ head(tm_s, 10)
 #Overview of mRNA mapping to different genomic features
 
 ```{r}
-palette <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/palette.xlsx")
-```
-```{r}
-pal <- palette[palette$sample_type %in% mRNA_info_l$sample_type, ] %>% 
-  arrange(sample_type)
-pal
-```
-
-```{r}
 mRNA_info_l %>% 
   filter(features != "Genes") %>% 
   filter(features != "NOR") %>%
@@ -345,18 +338,13 @@ ggsave(filename = "mRNA_TE_proportions.svg", width = 5, height = 6)
   
 ```
 
-
-
 ```{r}
 mRNA <- rbind(gm_s, tm_s) %>% 
   mutate(RNA_type = "mRNA") %>% 
   mutate(genotype = "WT") 
-
-
 ```
 
-
-
+#Scatter plot mRNA vs. siRNA
 ##egg siRNA vs. egg mRNA
 ```{r}
 #siRNA %>% head(10)
@@ -376,22 +364,6 @@ egg %>% arrange(-mean.nor.count.x) %>% head(10)
 ```
 
 
-
-```{r}
-# egg %>% 
-#   ggplot(aes(x = mean.nor.count.x * 10^6, y = mean.nor.count.y * 10^6)) +
-#   facet_grid(.~class, scales = "free") +
-#   geom_point(alpha = 0.8, color = "tomato1")+
-#   labs(x = "siRNA counts per million per kilobase",
-#        y = "mRNA counts per million per kilobase") +
-#   theme_minimal() +
-#   theme(text = element_text(size = 14, face="bold")) +
-#   theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
-#   theme(axis.text.y = element_text(colour="black"))
-# 
-# ggsave(filename = "egg siRNA vs. egg mRNA.png", height = 5, width = 5)
-```
-
 ##sperm siRNA vs. sperm mRNA
 ```{r}
 sperm_mRNA <- mRNA %>% 
@@ -407,23 +379,6 @@ sperm <- siRNA %>%
   full_join(sperm_mRNA, by = c("tag", "class", "sample_type")) 
 
 sperm %>% arrange(-mean.nor.count.x) %>% head(10)
-```
-
-
-
-```{r}
-# sperm %>% 
-#   ggplot(aes(x = mean.nor.count.x * 10^6, y = mean.nor.count.y * 10^6)) +
-#   facet_grid(.~class, scales = "free") +
-#   geom_point(alpha = 0.8, color = "dodgerblue2")+
-#   labs(x = "siRNA counts per million per kilobase",
-#        y = "mRNA counts per million per kilobase") +
-#   theme_minimal() +
-#   theme(text = element_text(size = 14, face="bold")) +
-#   theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
-#   theme(axis.text.y = element_text(colour="black"))
-# 
-# ggsave(filename = "sperm siRNA vs. sperm mRNA.png", height = 5, width = 5)
 ```
 
 ##seedling siRNA vs. seedling mRNA 
@@ -447,10 +402,9 @@ seedling <- siRNA %>%
 seedling %>% arrange(-mean.nor.count.x) %>% head(10)
 ```
  
- 
-
 
 ```{r}
+#produce the y = 1/x curve
 fit_df <- rbind(egg, sperm, seedling) %>% 
   mutate(y = log10(mean.nor.count.y  * 10^6 + 1.01)) %>% 
   mutate(x = 1/log10(mean.nor.count.24  * 10^6 + 1.01)) %>% 
@@ -474,13 +428,11 @@ fit_df <- rbind(egg, sperm, seedling) %>%
 
 fit_df
 ```
-
+#plot
 ```{r}
 curve <- data.frame(x = seq(0.29, 3, by= 0.001))
 curve <- curve %>% 
   mutate(y = 1/x)
-
-#curve
 
 
 rbind(egg, sperm, seedling) %>% 
@@ -505,157 +457,6 @@ ggsave(filename = "egg_sd_sperm_siRNA_vs_mRNA_log.png", width = 6, height = 6)
 # ggsave(filename = "egg_sd_sperm_siRNA_vs_mRNA_log.svg", width = 5, height = 6)
 ```
 
-
-##sperm siRNA vs. egg mRNA
-```{r}
-sp_egg <- siRNA %>% 
-  filter(sample_type == "sperm") %>% 
-  select(-RNA_type, -genotype, -sample_type) %>% 
-  full_join(egg_mRNA, by = c("tag", "class"))
-
-sp_egg %>% tail(10)
-```
-```{r}
-# curve <- data.frame(x = seq(0.29, 3, by= 0.001))
-# curve <- curve %>% 
-#   mutate(y = 1/x)
-# 
-# sp_egg %>% 
-#   mutate(col = case_when(
-#     mean.nor.count.x * 10^6 > 50 ~ "sperm cell",
-#     mean.nor.count.y * 10^6 > 100 ~ "egg cell",
-#     mean.nor.count.x * 10^6 < 50 &
-#       mean.nor.count.y * 10^6 < 100 ~ "neither"
-#   )) %>% 
-#   ggplot(aes(x = log10(mean.nor.count.x * 10^6 + 1), y = log10(mean.nor.count.y * 10^6 + 1))) +
-#   facet_grid(.~ class, scales = "free") +
-#   geom_point(alpha = 0.8, aes(color = col))+
-#   geom_line(data = curve, aes(x = x, y = y), linetype = 6, size = 1.25) +
-#   labs(x = "log10 siRNA counts per million per kb\nin sperm",
-#        y = "mRNA counts per million per kb\nin egg") +
-#   theme_minimal() +
-#   theme(legend.position = "none") +
-#   scale_color_manual(values = c("tomato1", "grey40", "dodgerblue2")) +
-#   theme(text = element_text(size = 14, face="bold")) +
-#   theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
-#   theme(axis.text.y = element_text(colour="black"))
-# 
-# ggsave(filename = "sperm siRNA vs. egg mRNA.png", height = 5, width = 5)
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##sperm siRNA vs. zygote 5hr mRNA
-```{r}
-z5_mRNA <- mRNA %>% 
- filter(sample_type == "zygote 5hr") %>% 
-               select(-RNA_type, -genotype)
-
-z5_mRNA %>% head(10)
-```
-```{r}
-sp_z5 <- siRNA %>% 
-  filter(sample_type == "sperm") %>% 
-  select(-RNA_type, -genotype, -sample_type) %>% 
-  full_join(z5_mRNA, by = c("tag", "class"))
-
-sp_z5 %>% tail(10)
-```
-```{r}
-# curve <- data.frame(x = seq(0.29, 3, by= 0.001))
-# curve <- curve %>% 
-#   mutate(y = 1/x)
-# 
-# sp_z5 %>% 
-#   mutate(col = case_when(
-#     mean.nor.count.x * 10^6 > 50 ~ "sperm cell",
-#     mean.nor.count.y * 10^6 > 100 ~ "zygote 2.5hr",
-#     mean.nor.count.x * 10^6 < 50 &
-#       mean.nor.count.y * 10^6 < 100 ~ "neither"
-#   )) %>% 
-#   ggplot(aes(x = log10(mean.nor.count.x * 10^6 + 1), y = log10(mean.nor.count.y * 10^6 + 1))) +
-#   facet_grid(.~ class, scales = "free") +
-#   geom_point(alpha = 0.8, aes(color = col))+
-#   geom_line(data = curve, aes(x = x, y = y), linetype = 6, size = 1.25) +
-#   labs(x = "log10 siRNA counts per million per kb\nin sperm",
-#        y = "log10 mRNA counts per million per kb\nin zgyote 5hrs") +
-#   theme_minimal() +
-#   theme(legend.position = "none") +
-#   scale_color_manual(values = c("grey40", "dodgerblue2", "dodgerblue3")) +
-#   theme(text = element_text(size = 14, face="bold")) +
-#   theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
-#   theme(axis.text.y = element_text(colour="black"))
-# 
-# ggsave(filename = "sperm siRNA vs. z5 mRNA.png", height = 5, width = 5)
-```
-```{r}
-fit_df_sp_egg_z5 <- rbind(sp_egg, sp_z5) %>% 
-  mutate(y = log10(mean.nor.count.y  * 10^6 + 1.01)) %>% 
-  mutate(x = 1/log10(mean.nor.count.x  * 10^6 + 1.01)) %>% 
-  mutate(y_fit = x) %>% 
-  mutate(delta = y - y_fit) %>% 
-  mutate(side = case_when(
-    delta > 0 ~ "out",
-    delta < 0 ~ "in"
-  )) %>% 
-  group_by(sample_type, class, side) %>% 
-  summarise(number = n()) %>% 
-  ungroup() %>% 
-  mutate(x = case_when(
-    side == "in" ~ 1,
-    side == "out" ~2
-  )) %>% 
-  mutate(y = case_when(
-    side == "in" ~ 0.1,
-    side == "out" ~2
-  )) 
-
-fit_df_sp_egg_z5
-```
-```{r}
-rbind(sp_egg, sp_z5) %>% 
-  mutate(col = case_when(
-    mean.nor.count.x * 10^6 > 50 ~ "sperm",
-    mean.nor.count.y * 10^6 > 100 ~ "not sperm",
-    mean.nor.count.x * 10^6 < 50 &
-      mean.nor.count.y * 10^6 < 100 ~ "neither"
-  )) %>% 
-  mutate(col2 = case_when(
-    col == "sperm" ~ "sperm",
-    col == "not sperm" &
-      sample_type == "egg" ~ "egg",
-    col == "not sperm" & 
-      sample_type == "zygote 5hr" ~ "zygote 5hr",
-    col == "neither" ~ "neither"
-  )) %>% 
-  ggplot(aes(x = log10(mean.nor.count.x * 10^6 + 1), y = log10(mean.nor.count.y * 10^6 + 1))) +
-  facet_grid(class ~ sample_type, scales = "free") +
-  geom_point(alpha = 0.8, aes(color = col2))+
-  geom_line(data = curve, aes(x = x, y = y), linetype = 6, size = 1.25) +
-  geom_text(data = fit_df_sp_egg_z5, aes(x = x, y = y, label = number), size = 5, fontface = "bold") +
-  labs(x = "log10 siRNA counts per million per kb\nin sperm",
-       y = "log10 mRNA counts per million per kb\nin egg or zygote 5hr") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_color_manual(values = c("tomato1", "grey60", "dodgerblue2", "dodgerblue3")) +
-  theme(text = element_text(size = 14, face="bold")) +
-  theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
-  theme(axis.text.y = element_text(colour="black"))
-
-ggsave(filename = "sperm siRNA vs.egg.z5 mRNA.png", height = 5, width = 5)
-```
 
 
 
@@ -707,374 +508,6 @@ ggsave(filename = "TE_exp_differs.png", height = 5, width = 5)
 
 
 
-#multivariable statistics
-##siRNA
-```{r}
-g24_l %>% head(10)
-
-g24_w <- g24_l %>% 
-  select( -kb, -lib, -lib.size, -`24nt`, -sample_type, -genotype, -nor.count.24, -count) %>% 
-  spread(sample_ID, nor.count)
-
-g24_w %>% head(10)
-```
-```{r}
-t24_w <- t24_l %>% 
-  select(-kb, -lib, -lib.size, -`24nt`, -sample_type, -genotype, -nor.count.24, -count) %>% 
-  spread(sample_ID, nor.count)
-
-t24_w %>% head(10)
-```
-```{r}
-siRNA_w <- rbind(g24_w, t24_w) 
-siRNA_mat <- siRNA_w[, -(1:2)]
-row.names(siRNA_mat) <- paste(siRNA_w$tag, siRNA_w$class, sep = ":")
-
-siRNA_mat %>% head(10)
-
-```
-```{r}
-sample_des <- sample_des %>% 
-  arrange(sample_ID)
-
-sample_des
-
-sample_des1 <- sample_des[sample_des$sample_ID %in% g24_l$sample_ID, ]
-dim(siRNA_mat)
-dim(sample_des1)
-```
-```{r}
-adonis((t(log10(siRNA_mat * 10^6 + 1))) ~ sample_type * genotype, sample_des1, method= "e")
-```
-```{r}
-pal8 <- c("tomato1", "darkgreen", "orangered3", "orange", "grey40", "seagreen", "seagreen", "dodgerblue2")
-```
-
-```{r}
-pc <- prcomp(t(log10(siRNA_mat * 10^6 + 1)))
-pc_importance <- as.data.frame(t(summary(pc)$importance))
-pc_importance
-
-ggplot(pc_importance, aes(x = 1:length( `Proportion of Variance`), y = `Proportion of Variance`) ) +
-  geom_bar(stat = 'identity') +
-  xlab('dimension') +
-  theme_bw()
-
-ggplot(pc_importance, aes(x = 1:length(`Cumulative Proportion`), y = `Cumulative Proportion`) ) +
-  geom_point() +
-  xlab('dimension') +
-  ylab('cumulative variance') +
-  ylim(c(0, 1.1))+
-  theme_bw()
-
-pc_nice <- cbind(sample_des1, pc$x)
-pc_nice <- pc_nice %>% 
-  mutate(type = case_when(
-    sample_type == "seedling segment" |
-      sample_type == "seedling protoplast" |
-      sample_type == "root" |
-      sample_type == "leaf" ~ "vegetative tissues",
-    sample_type == "egg cell" |
-      sample_type == "ovary" ~ "female",
-    sample_type == "sperm cell" |
-      sample_type == "pollen vegetative cell" ~ "male"
-  )) %>% 
-  mutate(type = factor(type, levels = c("female", "vegetative tissues", "male")))
-
-ggplot(pc_nice, aes(PC1, PC2)) +
-  #stat_ellipse(aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") +
-  geom_point(aes(color = sample_type), size = 3.5, alpha = 0.8) +
-  labs(x = paste("PC1 (", pc_importance[1, 2]*100, "% of Variance)", sep = ""), 
-       y = paste("PC2 (", pc_importance[2, 2]*100, "% of Variance)", sep = ""),
-       fill = NULL,
-       color = NULL) +
-  scale_color_manual(values = pal8) +
-  #scale_shape_manual(values = c(15, 17, 16)) +
-  #scale_fill_manual() + 
-  theme_minimal()+
-  theme(text = element_text(size= 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black")) +
-  theme(axis.text.y=element_text(colour = "black"))
-#ggsave(filename = "miR_PCA.png")
-```
-##mRNA
-```{r}
-gm_l %>% head(10)
-
-gm_w <- gm_l %>% 
-  select( -kb, -library, -Total,  -sample_type, -count) %>% 
-  spread(sample_ID, nor.count)
-
-gm_w %>% head(10)
-```
-```{r}
-tm_l %>% head(10)
-
-tm_w <- tm_l %>% 
-  select( -kb, -library, -Total,  -sample_type, -count) %>% 
-  spread(sample_ID, nor.count)
-
-tm_w %>% head(10)
-```
-```{r}
-mRNA_w <- rbind(gm_w, tm_w) 
-mRNA_mat <-mRNA_w[, -(1:2)]
-row.names(mRNA_mat) <- paste(mRNA_w$tag, mRNA_w$class, sep = ":")
-
-mRNA_mat %>% head(10)
-```
-```{r}
-mRNA_sample_des <- mRNA_sample_des %>% 
-  arrange(sample_ID)
-
-#mRNA_sample_des
-
-mRNA_sample_des1 <- mRNA_sample_des[mRNA_sample_des$sample_ID %in% gm_l$sample_ID, ]
-dim(mRNA_mat)
-dim(mRNA_sample_des1)
-```
-```{r}
-adonis((t(log10(mRNA_mat * 10^6 + 1))) ~ sample_type, mRNA_sample_des1, method= "e")
-```
-```{r}
-pal.m <- c("tomato1", "orange", "seagreen", "dodgerblue2", "dodgerblue2", "dodgerblue3", "dodgerblue4")
-```
-
-```{r}
-pcm <- prcomp(t(log10(mRNA_mat * 10^6 + 1)))
-pcm_importance <- as.data.frame(t(summary(pcm)$importance))
-pcm_importance
-
-ggplot(pcm_importance, aes(x = 1:length( `Proportion of Variance`), y = `Proportion of Variance`) ) +
-  geom_bar(stat = 'identity') +
-  xlab('dimension') +
-  theme_bw()
-
-ggplot(pcm_importance, aes(x = 1:length(`Cumulative Proportion`), y = `Cumulative Proportion`) ) +
-  geom_point() +
-  xlab('dimension') +
-  ylab('cumulative variance') +
-  ylim(c(0, 1.1))+
-  theme_bw()
-
-pcm_nice <- cbind(mRNA_sample_des1, pcm$x)
-pcm_nice <- pcm_nice %>% 
-  mutate(category = case_when(
-    str_detect(sample_type, pattern = "egg") ~ "egg",
-    str_detect(sample_type, pattern = "sperm|pollen VC") ~ "male germline",
-    str_detect(sample_type, pattern = "zygote") ~ "zygote",
-    str_detect(sample_type, pattern = "seedling") ~ "seedling"
-  )) %>% 
-  mutate(category = factor(category, levels = c("egg", "seedling","zygote", "male germline")))
-
-ggplot(pcm_nice, aes(PC1, PC2)) +
-  #stat_ellipse(aes(fill = category), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") +
-  geom_point(aes(color = sample_type, shape = category), size = 3.5, alpha = 0.8) +
-  labs(x = paste("PC1 (", pcm_importance[1, 2]*100, "% of Variance)", sep = ""), 
-       y = paste("PC2 (", pcm_importance[2, 2]*100, "% of Variance)", sep = ""),
-       fill = NULL,
-       color = NULL,
-       shape = NULL) +
-  scale_color_manual(values = pal.m) +
-  scale_shape_manual(values = 15:18) +
-  #scale_fill_manual() + 
-  theme_minimal()+
-  theme(text = element_text(size= 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black")) +
-  theme(axis.text.y=element_text(colour = "black"))
-
-
-#ggsave(filename = "miR_PCA.png")
-```
-
-```{r}
-(g24$X.4 - g24$X.3) %>% sum() / 10^6
-(t24$X.4 - t24$X.3) %>% sum() / 10^6
-```
-
-#pollen mRNA vs. sperm siRNA
-```{r}
-pv_mRNA <- mRNA %>% 
- filter(sample_type == "pollen VC") %>% 
-               select(-RNA_type, -genotype)
-
-pv_mRNA %>% head(10)
-```
-```{r}
-sp_pv <- siRNA %>% 
-  filter(sample_type == "sperm") %>% 
-  select(-RNA_type, -genotype, -sample_type) %>% 
-  full_join(pv_mRNA, by = c("tag", "class"))
-
-sp_pv %>% tail(10)
-```
-```{r}
-fit_df_sp_pv <- sp_pv %>% 
-  mutate(y = log10(mean.nor.count.y  * 10^6 + 1.01)) %>% 
-  mutate(x = 1/log10(mean.nor.count.x  * 10^6 + 1.01)) %>% 
-  mutate(y_fit = x) %>% 
-  mutate(delta = y - y_fit) %>% 
-  mutate(side = case_when(
-    delta > 0 ~ "out",
-    delta < 0 ~ "in"
-  )) %>% 
-  group_by(sample_type, class, side) %>% 
-  summarise(number = n()) %>% 
-  ungroup() %>% 
-  mutate(x = case_when(
-    side == "in" ~ 1,
-    side == "out" ~2
-  )) %>% 
-  mutate(y = case_when(
-    side == "in" ~ 0.1,
-    side == "out" ~2
-  )) 
-
-fit_df_sp_pv
-```
-
-```{r}
-sp_pv %>% 
-  mutate(col = case_when(
-    mean.nor.count.x * 10^6 > 50 ~ "sperm",
-    mean.nor.count.y * 10^6 > 100 ~ "pollen VC",
-    mean.nor.count.x * 10^6 < 50 &
-      mean.nor.count.y * 10^6 < 100 ~ "neither"
-  )) %>%
-  ggplot(aes(x = log10(mean.nor.count.x * 10^6 + 1), y = log10(mean.nor.count.y * 10^6 + 1))) +
-  facet_grid(.~ class, scales = "free") +
-  geom_point(alpha = 0.8, aes(color = col))+
-  geom_line(data = curve, aes(x = x, y = y), linetype = 6, size = 1.25) +
-  geom_text(data = fit_df_sp_pv, aes(x = x, y = y, label = number), size = 5, fontface = "bold") +
-  labs(x = "log10 siRNA counts per million per kb\nin sperm",
-       y = "log10 mRNA counts per million per kb\nin pollen VC") +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  scale_color_manual(values = c("grey40", "orange", "dodgerblue2")) +
-  theme(text = element_text(size = 14, face="bold")) +
-  theme(axis.text.x = element_text(colour="black", angle = 45, hjust = 1)) +
-  theme(axis.text.y = element_text(colour="black"))
-
-ggsave(filename = "sperm siRNA vs. pollen mRNA.png", height = 5, width = 5)
-```
-
-
-
-
-
-#correlation heatmaps
-##mRNA
-```{r}
-mRNA_cor <- mRNA_mat %>% cor(method = "s")
-
-mRNA_cor_df <- mRNA_cor %>% 
-  as.data.frame() %>% 
-  mutate(sample_ID = row.names(mRNA_cor)) %>% 
-  gather("sample_ID.y", "cor", 1:21) %>% 
-  inner_join(mRNA_sample_des1, by = "sample_ID") %>% 
-  inner_join(mRNA_sample_des1 %>% 
-               mutate(sample_ID.y = sample_ID), by = "sample_ID.y") %>%
-  group_by(sample_type.x, sample_type.y) %>%
-  summarise(mean.cor = mean(cor)) 
-
-mRNA_cor_df %>% head(10)
-#dim(mRNA_cor)
-```
-
-```{r}
-mRNA_order_cor <- mRNA_cor_df %>%
-  ungroup() %>% 
-  filter(sample_type.y == "egg") %>% 
-  arrange(mean.cor) %>% 
-  mutate(Order = order(mean.cor)) %>% 
-  select(sample_type.x, Order) 
-
-mRNA_order_cor
-```
-```{r}
-mRNA_order_cor %>% 
-  inner_join(mRNA_cor_df, by = "sample_type.x") %>% 
-  inner_join(mRNA_order_cor, by = c("sample_type.y" = "sample_type.x")) %>% 
-  mutate(d = (Order.x + 0.05)^2 + (Order.y + 0.05)^2) %>% 
-  distinct(d, .keep_all = T) %>% 
-  ggplot(aes(x = reorder(sample_type.x, Order.x), y = reorder(sample_type.y, Order.y))) +
-  geom_tile(aes(fill = mean.cor)) +
-  geom_text(aes(label = mean.cor %>% round(2)), size = 5, fontface = "bold") +
-  scale_fill_gradientn(colours = brewer.pal(9, "YlOrRd"), na.value = NA) +
-  labs(x = NULL, 
-       y = NULL,
-       fill = "cor") +
-  theme_minimal() +
-  theme(text = element_text(size= 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
-  theme(axis.text.y=element_text(colour = "black")) 
-
-ggsave(filename = "cor_heatmap_mRNA.png")
-```
-##siRNA
-```{r}
-siRNA_cor <- siRNA_mat %>% cor(method = "s")
-
-siRNA_cor_df <- siRNA_cor %>% 
-  as.data.frame() %>% 
-  mutate(sample_ID = row.names(siRNA_cor)) %>% 
-  gather("sample_ID.y", "cor", 1:28) %>% 
-  inner_join(sample_des1, by = "sample_ID") %>% 
-  inner_join(sample_des1 %>% 
-               mutate(sample_ID.y = sample_ID), by = "sample_ID.y") %>%
-  group_by(sample_type.x, sample_type.y) %>%
-  summarise(mean.cor = mean(cor)) %>% 
-  ungroup()
-
-siRNA_cor_df 
-#siRNA_cor
-```
-```{r}
-siRNA_order_cor <- siRNA_cor_df %>%
-  filter(sample_type.y == "egg") %>% 
-  arrange(mean.cor) %>% 
-  mutate(Order = order(mean.cor)) %>% 
-  select(sample_type.x, Order) 
-
-siRNA_order_cor
-```
-```{r}
-siRNA_order_cor %>% 
-  inner_join(siRNA_cor_df, by = "sample_type.x") %>% 
-  inner_join(siRNA_order_cor, by = c("sample_type.y" = "sample_type.x")) %>% 
-  mutate(d = (Order.x + 0.05)^2 + (Order.y + 0.05)^2) %>% 
-  distinct(d, .keep_all = T) %>% 
-  ggplot(aes(x = reorder(sample_type.x, Order.x), y = reorder(sample_type.y, Order.y))) +
-  geom_tile(aes(fill = mean.cor)) +
-  geom_text(aes(label = mean.cor %>% round(2)), size = 5, fontface = "bold") +
-  scale_fill_gradientn(colours = brewer.pal(9, "YlOrRd"), na.value = NA) +
-  labs(x = NULL, 
-       y = NULL,
-       fill = "cor") +
-  theme_minimal() +
-  theme(text = element_text(size= 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
-  theme(axis.text.y=element_text(colour = "black")) 
-
-ggsave(filename = "cor_heatmap_siRNA.png")
-```
-#scatter sperm vs. pollen
-##siRNA
-```{r}
-sp_pv_siRNA <- siRNA %>% 
-  filter(sample_type == "pollen VC" |
-           sample_type == "sperm") %>% 
-  select(sample_type, tag, class, mean.nor.count) %>% 
-  spread(sample_type, mean.nor.count)
-
-sp_pv_siRNA %>% head(20)
-```
-```{r}
-sp_pv_siRNA %>% 
-  ggplot(aes(x = log10(`pollen VC`*10^6 + 1) , y = log10(sperm * 10^6 + 1))) +
-  geom_point() +
-  facet_grid(. ~ class)
-```
 
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
