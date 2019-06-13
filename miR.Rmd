@@ -339,7 +339,8 @@ ggplot(aes(PC1, PC2)) +
        y = paste("PC2 (", pc_importance[2, 2]*100, "% of Variance)", sep = ""),
        fill = NULL,
        color = NULL) +
-  scale_color_manual(values = pal) +
+  scale_color_manual(values = c("darkgreen", "grey40", "seagreen", "orangered3", "tomato1", "dodgerblue2"),
+                     limits = c("leaf", "root", "seedling shoot", "ovary", "egg", "sperm")) +
   #scale_shape_manual(values = c(15, 17, 16)) +
   #scale_fill_manual() + 
   theme_minimal()+
@@ -351,192 +352,7 @@ ggplot(aes(PC1, PC2)) +
 ggsave(filename = "miR_PCA.svg", width = 6, height = 5)
 ```
 
-##Anova on PC plot coordinate
-```{r}
-model_x <- lm(PC1 ~ sample_type, pc_nice)
-anova(model_x)
 
-est_x <- emmeans(model_x, pairwise ~ sample_type)
-est_x_bar <- as.data.frame(summary(est_x)$emmeans)
-model_y <- lm(PC2 ~ sample_type, pc_nice)
-anova(model_y)
-
-est_y <- emmeans(model_y, pairwise ~ sample_type)
-est_y_bar <- as.data.frame(summary(est_y)$emmeans)
-cld.x <- CLD(est_x$emmeans, Letters = letters) %>% as.data.frame()
-cld.y <- CLD(est_y$emmeans, Letters = letters) %>% as.data.frame()
-```
-```{r}
-colnames(cld.x)[2] <- "PC1"
-colnames(cld.y)[2] <- "PC2"
-
-cld.xy <- cld.x %>% 
-  full_join(cld.y, by = "sample_type")
-
-head(cld.xy)
-```
-
-```{r}
-# ggplot(cld.xy, aes(PC1, PC2)) +
-#   stat_ellipse(data = pc_nice, aes(fill = type), alpha = 0.3, level = 0.9, type = "t", geom = "polygon") +
-#   geom_errorbar(aes(ymin = lower.CL.y, ymax = upper.CL.y, color = sample_type), size = 1, alpha = 0.9) +
-#   geom_errorbarh(aes(xmin = lower.CL.x, xmax = upper.CL.x, color = sample_type), size = 1, alpha = 0.9) +
-#   #geom_point(data = pc_nice, aes(x = PC1, y = PC2, color = sample_type)) +
-#   geom_point(aes(color = sample_type), size = 3.5, alpha = 0.8) +
-#   labs(x = paste("PC1 (", pc_importance[1, 2]*100, "% of Variance)", sep = ""), 
-#        y = paste("PC2 (", pc_importance[2, 2]*100, "% of Variance)", sep = ""),
-#        color = NULL,
-#        fill = NULL) +
-#   scale_color_manual(values = pal)  + 
-#   theme_minimal()+
-#   theme(text = element_text(size= 14, face="bold")) +
-#   theme(axis.text.x=element_text(colour = "black")) +
-#   theme(axis.text.y=element_text(colour = "black"))
-# 
-# ggsave(filename = "miR_PCA_errorbar.png")
-```
-##coordinate p value matrix
-```{r}
-self <- cbind(
-    c("egg cell", "leaf", "ovary no egg", "pollen vegetative cell",
-                      "root", "seedling protoplast", "seedling segment", "sperm cell"),
-    c("egg cell", "leaf", "ovary no egg", "pollen vegetative cell",
-                      "root", "seedling protoplast", "seedling segment", "sperm cell"),
-    c(rep(1, 8))
-    ) %>% 
-  as.data.frame() 
-
-colnames(self) <- c("sample_type1", "sample_type2", "p.value")
-self$p.value <- as.numeric(self$p.value)
-#self
-```
-
-```{r}
-est_x1 <- est_x$contrasts %>%
-  as.data.frame() %>% 
-  separate(contrast, c("sample_type1", "sample_type2"), remove = T, sep = " - ") %>% 
-  select(sample_type1, sample_type2, p.value) %>% 
-  rbind(self) %>% 
-  spread("sample_type2", "p.value") 
-
-est_x_mat <- est_x1[, -1] 
-row.names(est_x_mat) <- est_x1$sample_type1
-
-#est_x_mat
-```
-```{r}
-est_y1 <- est_y$contrasts %>%
-  as.data.frame() %>% 
-  separate(contrast, c("sample_type1", "sample_type2"), remove = T, sep = " - ") %>% 
-  select(sample_type1, sample_type2, p.value) %>%
-  rbind(self) %>% 
-  spread("sample_type2", "p.value") 
-
-est_y_mat <- est_y1[, -1] %>% as.matrix()
-row.names(est_y_mat) <- est_y1$sample_type1
-
-#est_y_mat %>% t()
-```
-```{r}
-p_mat <- matrix(NA, nrow = 8, ncol = 8)
-p_mat[upper.tri(p_mat)] <- est_x_mat[upper.tri(est_x_mat)]
-p_mat[lower.tri(p_mat)] <- est_y_mat[upper.tri(est_y_mat)]
-
-diag(p_mat) <- 1
-colnames(p_mat) <- self$sample_type2
-
-p_mat <- p_mat %>% 
-  as.data.frame() %>% 
-  mutate(sample_type1 = self$sample_type1) %>% 
-  gather("sample_type2", "p.value", 1:8)
-```
-
-```{r}
-p_mat %>% 
-  ggplot(aes(x = sample_type1, y = sample_type2)) +
-  geom_tile(aes(fill = p.value)) +
-  geom_text(aes(label = p.value %>% round(2)), size = 5, fontface = "bold") +
-  scale_fill_gradientn(colours = rev(brewer.pal(11, "Spectral"))) +
-  scale_x_discrete(labels = c("egg", "leaf", "ovary", "pollen VC", 
-                             "root", "sd protoplast", "sd segment", "sperm")) +
-  scale_y_discrete(labels = c("egg", "leaf", "ovary", "pollen VC", 
-                           "root", "sd protoplast", "sd segment", "sperm")) +
-  labs(x = NULL, 
-       y = NULL,
-       subtitle = "upper tri. for x coordinates; lower tri. for y coordinates") +
-  theme_minimal() +
-  theme(text = element_text(size= 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black", angle = 45, hjust = 1)) +
-  theme(axis.text.y=element_text(colour = "black"))
-
-ggsave(filename = "p_heatmap.png")
-```
-
-#correlation heatmaps
-```{r}
-cpm_table <- cpm %>% 
-  mutate(miR = row.names(cpm)) %>% 
-  as.data.frame()
-
-head(cpm_table)
-```
-```{r}
-cor_matrix <- cor(cpm %>% 
-                    select(-ddm1, -drm2))
-sample_des_wt <- filter(sample_des, genotype == "WT")
-
-#cor_matrix
-cor_tidy <- cor_matrix %>% 
-  as.data.frame() %>% 
-  mutate(sample_ID = row.names(cor_matrix)) %>% 
-  gather("sample_ID.y", "cor", 1:29) %>% 
-  full_join(sample_des_wt, by ="sample_ID") %>% 
-  full_join(sample_des_wt %>% 
-               mutate(sample_ID.y = sample_ID), by = "sample_ID.y") %>% 
-  select(sample_ID.x, sample_ID.y, cor, sample_type.x, sample_type.y) %>% 
-  group_by(sample_type.x, sample_type.y) %>% 
-  summarise(mean.cor = mean(cor)) %>% 
-  spread(sample_type.y, mean.cor)
-cor_tidy1 <- cor_tidy[, -1] %>% 
-  as.data.frame()
-row.names(cor_tidy1) <- cor_tidy$sample_type.x
-cor_tidy1[upper.tri(cor_tidy1)] <- NA
-cor_tidy1
-```
-```{r}
-cor_tidy <- cor_tidy1 %>% 
-  as.data.frame() %>% 
-  mutate(sample_type.x = row.names(cor_tidy1)) %>% 
-  gather("sample_type.y", "mean.cor", 1:8) %>% 
-  mutate(cor1 = case_when(
-    mean.cor == 1 ~ paste(mean.cor %>% round(3), "*", sep = ""),
-    mean.cor != 1 ~ paste(mean.cor %>% round(3), "", sep = "")
-  )) 
-cor_tidy
-```
-```{r}
-cor_tidy %>% 
-  ggplot(aes(x = sample_type.x, y = sample_type.y)) +
-  geom_tile(aes(fill = mean.cor)) +
-  scale_fill_gradientn(colours = brewer.pal(9, "YlOrRd")[c(1:9)], na.value = NA) + 
-  geom_text(aes(label = cor1), size = 5, fontface = "bold") +
-  scale_x_discrete(labels = c("egg", "leaf", "ovary", "pollen VC", 
-                             "root", "sd protoplast", "seedling", "sperm")) +
-  scale_y_discrete(labels = c("egg", "leaf", "ovary", "pollen VC", 
-                           "root", "sd protoplast", "seedling", "sperm")) +
-  labs(x = NULL,
-       y = NULL,
-       fill = "cor") +
-  ggtitle("correlation heatmap for miRNA") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust= 1)) +
-  theme(text = element_text(size = 14, face="bold")) +
-  theme(axis.text.x=element_text(colour="black")) +
-  theme(axis.text.y=element_text(colour="black"))
-
-
-ggsave(filename = "miR_cor_heatmap.png")
-```
 #miRNA clusters
 egg vs. seedling vs sperm 
 ```{r}
@@ -856,7 +672,8 @@ cor_ps %>%
   theme(legend.position = "bottom") +
   theme(text = element_text(size = 18, face="bold")) +
   theme(axis.text.x=element_text(colour = "black")) +
-  theme(axis.text.y=element_text(colour = "black"))
+  theme(axis.text.y=element_text(colour = "black")) +
+  theme(legend.key.width = unit(2.5, "lines"))
 
 ggsave(filename = "PC_vs_clusters.svg", width = 4.5, height = 6)
 ```
@@ -889,50 +706,6 @@ ggplot(sex, aes(x = cluster_16, y = cluster_11)) +
 
 ggsave(filename = "miR_pseudo_PCR.png")
 ```
-
-```{r}
-logcpm_clust %>% 
-  filter(cluster_name == 10) %>% 
-  ggplot(aes(x = type, y = z.score)) +
-  geom_line(aes(group = miR), size = 2, alpha = 0.8, color = "grey40") +
-  geom_point(aes(color = logCPM), size = 3) + 
-  facet_wrap(~miR, ncol = 4) +
-  ggtitle("cluster 10 - high in egg but low in sperm") + 
-  labs(x = NULL,
-       color = "log2CPM") +
-  scale_color_gradientn(colours = brewer.pal(9, "YlOrRd")) +
-  scale_x_discrete(labels = c("egg", "seedling", "sperm")) +
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 45, hjust= 1)) +
-  theme(text = element_text(size = 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black")) +
-  theme(axis.text.y=element_text(colour = "black")) 
-
-
-ggsave(filename = "miR_cluster10.png", width = 8, height = 7, units = "in")
-```
-```{r}
-logcpm_clust %>% 
-  filter(cluster_name == 7) %>% 
-  ggplot(aes(x = type, y = z.score)) +
-  geom_line(aes(group = miR), size = 2, alpha = 0.8, color = "grey40") +
-  geom_point(aes(color = logCPM), size = 3) + 
-  facet_wrap(~miR, ncol = 4) +
-  ggtitle("cluster 7- high in sperm but low in egg") + 
-  labs(x = NULL,
-       color = "log2CPM") +
-  scale_color_gradientn(colours = brewer.pal(9, "YlOrRd")) +
-  scale_x_discrete(labels = c("egg", "seedling", "sperm")) +
-  theme_minimal()+
-  theme(axis.text.x = element_text(angle = 45, hjust= 1)) +
-  theme(text = element_text(size = 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black")) +
-  theme(axis.text.y=element_text(colour = "black")) 
-
-
-ggsave(filename = "miR_cluster7.png", width = 8, height = 7, units = "in")
-```
-
 
 
 #differential expressions
@@ -1112,32 +885,7 @@ pal5 <- c("tomato1", "orangered3", "orange", "turquoise4", "violetred2")
 ```
 
 
-```{r}
-miR159_tb %>% 
-  #filter(CPM > 100) %>% 
-  mutate(class = paste(sample_type, genotype)) %>% 
-  filter(sample_type == "leaf" |
-           sample_type == "root" |
-           sample_type == "seedling shoot") %>%
-  ggplot(aes(x = class, y = log10(CPM + 1))) +
-  geom_bar(stat = "summary", aes(fill = sample_type), alpha = 0.8, fun.y = mean) +
-  #facet_grid(miR ~ sample_type + genotype, scales =  "free", space = "free_x") + 
-  facet_wrap(~miR) + 
-  geom_point(aes( )) +
-  scale_x_discrete(labels = c("ddm1", "drm2", "WT", "root", "seedling")) +
-  scale_fill_manual(values = c("darkgreen", "grey40", "turquoise4")) +
-  labs(x = NULL,
-       y = "log10 counts per million miRNA reads\n",
-       fill = NULL) +
-  theme_minimal() +
-  theme(legend.position = "none") +
-  theme(axis.text.x = element_text(angle = 45, hjust= 1)) +
-  theme(text = element_text(size = 14, face="bold")) +
-  theme(axis.text.x=element_text(colour = "black")) +
-  theme(axis.text.y=element_text(colour = "black")) 
 
-ggsave(filename = "miR159_leaf_root.png", height = 5, width = 7)
-```
 ##miR159 by total miRNA in each sample type
 ```{r}
 siRNA_comp <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/TE/siRNA_comp.xlsx")
@@ -1205,31 +953,6 @@ miR159_tb %>%
   theme(axis.text.y=element_text(colour = "black"))  
 
 ggsave(filename = "miR159_gametes.svg", height = 5, width = 3.6)
-```
-#ath-miR845 in rice
-closest match in rice is miR1873, miR1863 and miR5485
-```{r}
-# cpm_l %>% 
-#   filter(str_detect(miR, "miR5485")|
-#            str_detect(miR, "miR1863")) %>% 
-#   filter(CPM > 10) %>% 
-#   ggplot(aes(x = sample_type, y = CPM %>% log10() )) +
-#   geom_bar(stat = "summary", aes(fill = sample_type), alpha = 0.8, fun.y = mean) +
-#   facet_wrap(~miR, scales =  "free_y") + 
-#   geom_point(aes(x = sample_type)) +
-#   scale_x_discrete(labels = NULL) +
-#   scale_fill_manual(values = pal) +
-#   labs(x = NULL,
-#        y = "log10 counts per million miRNA reads\n",
-#        fill = NULL) +
-#   theme_minimal() +
-#   theme(axis.text.x = element_text(angle = 45, hjust= 1)) +
-#   theme(text = element_text(size = 14, face="bold")) +
-#   theme(axis.text.x=element_text(colour = "black")) +
-#   theme(axis.text.y=element_text(colour = "black")) +
-#   theme(legend.position = "bottom")
-# 
-# ggsave("putative_miR845_ortho.png")
 ```
 
 #Egg vs. egg
