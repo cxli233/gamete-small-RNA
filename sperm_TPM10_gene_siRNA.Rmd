@@ -1,0 +1,490 @@
+---
+title: "sperm mRNA TPM>10 metagene_siRNA"
+author: "Chenxin Li"
+date: "April 2, 2019"
+output:
+  html_notebook:
+    number_sections: yes
+    toc: yes
+    toc_float: yes
+  html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(ggplot2)
+library(emmeans)
+library(tidyr)
+library(dplyr)
+library(readr)
+library(readxl)
+library(vegan)
+library(edgeR)
+library(stringr)
+library(RColorBrewer)
+library(svglite)
+```
+
+#load data
+##upstream
+```{r}
+BS1_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/blender-sperm-1_S30_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS2_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/BlenderSperm2_S8_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+     "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS4a_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/BlenderSperm4a_S173_L007_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS4b_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Blendersperm4b_S176_L007_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS6a_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Blendersperm6a_S174_L007_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS6b_up <-  read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Blendersperm6b_S177_L007_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BV1_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/BlenderVegetativeCell1_S4_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BV2_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/BlenderVegetativeCell2_S6_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+B15_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Bulk-15_S26_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+B20_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Bulk-20_S27_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+B25_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Bulk-25_S28_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+ddm1_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/ddm1ab.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+ddm1_con_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/ddm1ab_control.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+drm2_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/drm2-T-DNA.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+drm2_con_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/drm2-T-DNA_control.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E9a_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/egg-9a_S25_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E9b_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/egg-9b_S26_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E9c_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/egg-9c_S27_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E2_up <-  read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/eggcell2_combined.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E3_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/eggcell3_combined.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E4_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/eggcell4_combined.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+OV1a_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/ovary-no-egg-1a_S31_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+OV1b_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/ovary-no-egg-1b_S32_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+OV2_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Ovarynoegg2_S5_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+P20_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Protoplast-20_S30_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+P25_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Protoplast-25_S31_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SD4_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/seedling4_S3_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SP5b_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/sperm-5b_S28_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SP5c_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/sperm-5c_S29_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+root_up <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/SRR5713891.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_upstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+```{r}
+B15_up <- B15_up %>% 
+  mutate(sample_ID = "B15")
+
+B20_up <- B20_up %>% 
+  mutate(sample_ID = "B20")
+
+B25_up <- B25_up %>% 
+  mutate(sample_ID = "B25")
+
+BS1_up <- BS1_up %>% 
+  mutate(sample_ID = "BS1")
+
+BS2_up <- BS2_up %>% 
+  mutate(sample_ID = "BS2")
+
+BS4a_up <- BS4a_up %>% 
+  mutate(sample_ID = "BS4a")
+
+BS4b_up <- BS4b_up %>% 
+  mutate(sample_ID = "BS4b")
+
+BS6a_up <- BS6a_up %>% 
+  mutate(sample_ID = "BS6a")
+
+BS6b_up <- BS6b_up %>% 
+  mutate(sample_ID = "BS6b")
+
+BV1_up <- BV1_up %>% 
+  mutate(sample_ID = "BV1")
+
+BV2_up <- BV2_up %>% 
+  mutate(sample_ID = "BV2")
+
+ddm1_up <- ddm1_up %>% 
+  mutate(sample_ID = "ddm1")
+
+ddm1_con_up <- ddm1_con_up %>% 
+  mutate(sample_ID = "ddm1_con")
+
+drm2_up <- drm2_up %>% 
+  mutate(sample_ID = "drm2")
+
+drm2_con_up <- drm2_con_up %>% 
+  mutate(sample_ID = "drm2_con")
+
+E2_up <- E2_up %>% 
+  mutate(sample_ID = "E2")
+
+E3_up <- E3_up %>% 
+  mutate(sample_ID = "E3")
+
+E4_up <- E4_up %>% 
+  mutate(sample_ID = "E4")
+
+E9a_up <- E9a_up %>% 
+  mutate(sample_ID = "E9a")
+
+E9b_up <- E9b_up %>% 
+  mutate(sample_ID = "E9b")
+
+E9c_up <- E9c_up %>% 
+  mutate(sample_ID = "E9c")
+
+OV1a_up <- OV1a_up %>% 
+  mutate(sample_ID = "OV1b")
+
+OV1b_up <- OV1b_up %>% 
+  mutate(sample_ID = "OV1b")
+
+OV2_up <- OV2_up %>% 
+  mutate(sample_ID = "OV2")
+
+P20_up <- P20_up %>% 
+  mutate(sample_ID = "P20")
+
+P25_up <- P25_up %>% 
+  mutate(sample_ID = "P25")
+
+root_up <- root_up %>% 
+  mutate(sample_ID = "root")
+
+SD4_up <- SD4_up %>% 
+  mutate(sample_ID = "SD4")
+
+SP5b_up <- SP5b_up %>% 
+  mutate(sample_ID = "SP5b")
+
+SP5c_up <- SP5c_up %>% 
+  mutate(sample_ID = "SP5c")
+
+upstream <- rbind(B15_up, B20_up, B25_up, BS1_up, BS2_up, BS4a_up, BS4b_up,
+                  BS6a_up, BS6b_up, BV1_up, BV2_up, ddm1_up, ddm1_con_up, drm2_up, drm2_con_up,
+                  E2_up, E3_up, E4_up, E9a_up, E9b_up, E9c_up, OV1a_up, OV1b_up, OV2_up,
+                  P20_up, P25_up, root_up, SP5b_up, SP5c_up) %>% 
+  mutate(location = "5' end")
+```
+
+##downstream
+```{r}
+
+BS1_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/blender-sperm-1_S30_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE) 
+
+BS2_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/BlenderSperm2_S8_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+     "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS4a_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/BlenderSperm4a_S173_L007_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS4b_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Blendersperm4b_S176_L007_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS6a_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Blendersperm6a_S174_L007_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BS6b_down <-  read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Blendersperm6b_S177_L007_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BV1_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/BlenderVegetativeCell1_S4_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+BV2_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/BlenderVegetativeCell2_S6_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+B15_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Bulk-15_S26_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+B20_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Bulk-20_S27_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+B25_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Bulk-25_S28_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+ddm1_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/ddm1ab.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+ddm1_con_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/ddm1ab_control.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+drm2_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/drm2-T-DNA.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+drm2_con_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/drm2-T-DNA_control.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E9a_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/egg-9a_S25_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E9b_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/egg-9b_S26_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E9c_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/egg-9c_S27_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E2_down <-  read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/eggcell2_combined.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E3_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/eggcell3_combined.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+E4_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/eggcell4_combined.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+OV1a_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/ovary-no-egg-1a_S31_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+OV1b_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/ovary-no-egg-1b_S32_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+OV2_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Ovarynoegg2_S5_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+P20_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Protoplast-20_S30_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+P25_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/Protoplast-25_S31_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SD4_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/seedling4_S3_L004_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SP5b_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/sperm-5b_S28_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SP5c_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/sperm-5c_S29_L002_R1_001.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+
+root_down <- read_delim("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/metagene_siRNA_coverage/sperm_TPM10_gene_siRNAs/metagene/SRR5713891.fastq.gz.trimmed.fastq.gz_sperm_MSU7_filtered_genes.gff_q20_downstream.txt", 
+    "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+```{r}
+B15_down <- B15_down %>% 
+  mutate(sample_ID = "B15")
+
+B20_down <- B20_down %>% 
+  mutate(sample_ID = "B20")
+
+B25_down <- B25_down %>% 
+  mutate(sample_ID = "B25")
+
+BS1_down <- BS1_down %>% 
+  mutate(sample_ID = "BS1")
+
+BS2_down <- BS2_down %>% 
+  mutate(sample_ID = "BS2")
+
+BS4a_down <- BS4a_down %>% 
+  mutate(sample_ID = "BS4a")
+
+BS4b_down <- BS4b_down %>% 
+  mutate(sample_ID = "BS4b")
+
+BS6a_down <- BS6a_down %>% 
+  mutate(sample_ID = "BS6a")
+
+BS6b_down <- BS6b_down %>% 
+  mutate(sample_ID = "BS6b")
+
+BV1_down <- BV1_down %>% 
+  mutate(sample_ID = "BV1")
+
+BV2_down <- BV2_down %>% 
+  mutate(sample_ID = "BV2")
+
+ddm1_down <- ddm1_down %>% 
+  mutate(sample_ID = "ddm1")
+
+ddm1_con_down <- ddm1_con_down %>% 
+  mutate(sample_ID = "ddm1_con")
+
+drm2_down <- drm2_down %>% 
+  mutate(sample_ID = "drm2")
+
+drm2_con_down <- drm2_con_down %>% 
+  mutate(sample_ID = "drm2_con")
+
+E2_down <- E2_down %>% 
+  mutate(sample_ID = "E2")
+
+E3_down <- E3_down %>% 
+  mutate(sample_ID = "E3")
+
+E4_down <- E4_down %>% 
+  mutate(sample_ID = "E4")
+
+E9a_down <- E9a_down %>% 
+  mutate(sample_ID = "E9a")
+
+E9b_down <- E9b_down %>% 
+  mutate(sample_ID = "E9b")
+
+E9c_down <- E9c_down %>% 
+  mutate(sample_ID = "E9c")
+
+OV1a_down <- OV1a_down %>% 
+  mutate(sample_ID = "OV1b")
+
+OV1b_down <- OV1b_down %>% 
+  mutate(sample_ID = "OV1b")
+
+OV2_down <- OV2_down %>% 
+  mutate(sample_ID = "OV2")
+
+P20_down <- P20_down %>% 
+  mutate(sample_ID = "P20")
+
+P25_down <- P25_down %>% 
+  mutate(sample_ID = "P25")
+
+root_down <- root_down %>% 
+  mutate(sample_ID = "root")
+
+SD4_down <- SD4_down %>% 
+  mutate(sample_ID = "SD4")
+
+SP5b_down <- SP5b_down %>% 
+  mutate(sample_ID = "SP5b")
+
+SP5c_down <- SP5c_down %>% 
+  mutate(sample_ID = "SP5c")
+
+downstream <- rbind(B15_down, B20_down, B25_down, BS1_down, BS2_down, BS4a_down, BS4b_down,
+                  BS6a_down, BS6b_down, BV1_down, BV2_down, ddm1_down, ddm1_con_down, drm2_down, drm2_con_down,
+                  E2_down, E3_down, E4_down, E9a_down, E9b_down, E9c_down, OV1a_down, OV1b_down, OV2_down,
+                  P20_down, P25_down, root_down, SP5b_down, SP5c_down) %>% 
+  mutate(location = "3' end")
+
+```
+##sample des, library size
+```{r}
+sample_des <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/sample_des.xlsx") 
+
+siRNA_comp <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/TE/siRNA_comp.xlsx")
+
+total_siRNA_length <- read_excel("C:/Users/cxli9/Desktop/Li/PBI/PBI299 (Sundar Lab)/smRNA project/CLVS08/TE/total_siRNA_length.xlsx") 
+```
+```{r}
+sample_des_size <- siRNA_comp %>% 
+  select(-library) %>% 
+  inner_join(sample_des, by = "sample_ID") %>% 
+  select(-X2, -X3, -X4, -X5, -X6) %>% 
+  inner_join(total_siRNA_length, by = "sample_ID")
+
+sample_des_size
+```
+
+#normalize
+```{r}
+meta <- rbind(upstream, downstream) %>% 
+  mutate(location = factor(location, levels = c("5' end", "3' end"))) %>% 
+  inner_join(sample_des_size, by = "sample_ID") %>% 
+  mutate(pro_24 = `total overlap`/ `24nt`) %>% 
+  mutate(pro_sm = `total overlap`/ lib.size) %>% 
+  mutate(pro_si = `total overlap`/ total.siRNA)
+
+meta
+```
+
+
+#plot
+```{r}
+pal <- c("tomato1", "darkgreen", "orangered3", "orange", "grey40", "seagreen", "turquoise4", "violetred2")
+pal3 <- pal3 <- c("tomato1", "seagreen", "dodgerblue2")
+```
+
+ 
+```{r}
+meta %>% 
+  filter(genotype == "WT") %>% 
+  filter(sample_type == "egg"|
+           sample_type == "sperm"|
+           sample_type == "seedling shoot") %>% 
+  ggplot(aes(x = `bin start`, y = pro_si * 1000)) +
+  facet_grid(.~location, scales = "free_x")+
+  stat_summary(geom = "line", fun.y = mean, aes(group = sample_type, color = sample_type), size = 1.25, alpha = 0.8) +
+  #stat_summary(geom = "linerange",  fun.data = "mean_cl_boot", aes(color = sample_type)) +
+  scale_x_continuous(breaks = c(-3000,-2000,-1000, 0, 1000, 2000, 2900),
+                     labels = NULL)+
+  scale_color_manual(values = pal3) +
+  labs(color = NULL,
+       x = NULL, 
+       y = "normalized coverage") + 
+  theme_minimal()+
+  theme(legend.position = c(0.8, 0.8)) +
+  theme(text = element_text(size = 18, face="bold")) +
+  theme(axis.text.x=element_text(colour="black")) +
+  theme(axis.text.y=element_text(colour="black"))
+
+ggsave(filename = "sperm_TPM10_24_meta_gamate.svg", height = 4, width = 5)
+ggsave(filename = "sperm_TPM10_24_meta_gamate.png", height = 4, width = 5)
+```
+
+```{r}
+meta_m <- meta %>% 
+  filter(sample_type == "leaf") %>% 
+  mutate(rows = case_when(
+    str_detect(sample_ID, "ddm") ~ "ddm1ab leaf",
+    str_detect(sample_ID, "drm") ~ "drm2 leaf"
+  )) 
+```
+
+ 
+
+ 
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
